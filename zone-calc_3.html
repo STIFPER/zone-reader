@@ -71,7 +71,10 @@
     color:var(--ink-main);
     font-family:'Satoshi', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     min-height:100vh;
-    padding:14px 10px 30px;
+    /* viewport-fit=cover lets the page draw under the notch/rounded screen
+       corners/home-indicator — without this env() padding the device shell's
+       corner screws sit flush against the physical edge on phones like iPhone */
+    padding:max(14px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(30px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
     user-select:none;
     -webkit-user-select:none;
     transition: background 0.3s ease, color 0.3s ease;
@@ -1046,7 +1049,7 @@
 
   @media (max-width: 480px) {
     body {
-      padding: 10px 6px 20px;
+      padding: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
     }
     .device {
       padding: 14px 10px 16px;
