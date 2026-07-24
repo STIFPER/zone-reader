@@ -1,0 +1,15 @@
+{
+  "name": "Zone Reader — Exposure & Dynamic Range Workbench",
+  "short_name": "Zone Reader",
+  "description": "Ansel Adams Zone System exposure calculator with live camera spot-metering.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#D8D5CA",
+  "theme_color": "#0A0B0C",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
