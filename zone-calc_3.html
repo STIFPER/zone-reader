@@ -1,0 +1,1827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Zone Reader — Precision Analog & Live Camera Exposure System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700;800&display=swap" rel="stylesheet">
+<!-- FONTSHARE SATOSHI PRIMARY TYPOGRAPHY -->
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@900,700,500,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* LIGHT METALLIC MODE (Default) */
+    --bg-page: #D8D5CA;
+    --shell-bg: linear-gradient(145deg, #ECE9DF 0%, #CAC5B6 50%, #DFDAD0 100%);
+    --panel-white: #FAF9F5;
+    --panel-dark: #141618;
+    --roller-bg: #141619;
+    --ink-main: #1C1916;
+    --ink-sub: #666357;
+    --ink-dim: #949083;
+    
+    --accent-glow: #F26522;
+    --accent-main: #1C1A17;
+    --border-line: #B8B3A3;
+    --screw-head: linear-gradient(135deg, #D4D0C2 0%, #A8A496 100%);
+    
+    --shadow-soft: 0 10px 24px rgba(0,0,0,0.12), 0 2px 6px rgba(0,0,0,0.08);
+    --shadow-inset: inset 0 3px 8px rgba(0,0,0,0.18), inset 0 0 0 1px rgba(0,0,0,0.12);
+    --shadow-btn: 0 4px 10px rgba(0,0,0,0.1), inset 0 1.5px 0 #FFFFFF, inset 0 -1.5px 0 rgba(0,0,0,0.12);
+  }
+
+  body.theme-dark {
+    /* DARK GRAPHITE METALLIC MODE */
+    --bg-page: #0A0B0C;
+    --shell-bg: linear-gradient(145deg, #272A2E 0%, #15171A 50%, #202327 100%);
+    --panel-white: #1A1D21;
+    --panel-dark: #08090A;
+    --roller-bg: #0B0C0E;
+    --ink-main: #F0EFEA;
+    --ink-sub: #9E9C92;
+    --ink-dim: #6E6D64;
+    
+    --accent-glow: #F26522;
+    --accent-main: #E5E3D8;
+    --border-line: #3A3D44;
+    --screw-head: linear-gradient(135deg, #3A3E45 0%, #1A1C20 100%);
+    
+    --shadow-soft: 0 12px 30px rgba(0,0,0,0.5);
+    --shadow-inset: inset 0 3px 10px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(255,255,255,0.08);
+    --shadow-btn: 0 4px 12px rgba(0,0,0,0.4), inset 0 1.5px 0 rgba(255,255,255,0.15), inset 0 -1.5px 0 rgba(0,0,0,0.4);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse 100% 50% at 50% 0%, rgba(255,255,255,0.08) 0%, transparent 70%),
+      var(--bg-page);
+    color:var(--ink-main);
+    font-family:'Satoshi', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    min-height:100vh;
+    padding:14px 10px 30px;
+    user-select:none;
+    -webkit-user-select:none;
+    transition: background 0.3s ease, color 0.3s ease;
+  }
+  .wrap{max-width:940px;margin:0 auto;}
+
+  /* Top Bar Header Controls */
+  .top-bar {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:10px;
+    padding:0 4px;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  .app-brand {
+    font-family:'Satoshi', monospace;
+    font-size:10.5px;
+    letter-spacing:.17em;
+    font-weight:700;
+    color:var(--ink-sub);
+    text-transform:uppercase;
+  }
+  .top-btn-group {
+    display:flex;
+    gap:6px;
+  }
+  .theme-toggle-btn, .cam-toggle-btn, .upload-btn-top {
+    background: var(--panel-white);
+    border: 1px solid var(--border-line);
+    border-radius:20px;
+    padding:5px 12px;
+    font-family:'Satoshi', sans-serif;
+    font-size:10.5px;
+    font-weight:700;
+    color:var(--ink-main);
+    cursor:pointer;
+    box-shadow: var(--shadow-btn);
+    transition:all 0.2s ease;
+  }
+  .cam-toggle-btn.active {
+    background: var(--accent-glow);
+    color: #FFFFFF !important;
+    border-color: var(--accent-glow);
+  }
+
+  /* Main Industrial Chassis Shell */
+  .device{
+    background: var(--shell-bg);
+    border-radius:22px;
+    padding:20px 20px 22px;
+    margin:0 0 12px;
+    box-shadow: var(--shadow-soft), inset 0 1.5px 0 rgba(255,255,255,0.7), 0 0 0 1px rgba(0,0,0,0.15);
+    border: 1px solid var(--border-line);
+    position:relative;
+    overflow:hidden;
+  }
+
+  /* Corner Screws */
+  .screw {
+    position:absolute;
+    width:13px;height:13px;
+    border-radius:50%;
+    background: var(--screw-head);
+    box-shadow: inset 0 1px 2px rgba(255,255,255,0.8), 0 2px 4px rgba(0,0,0,0.3), inset 0 -1px 2px rgba(0,0,0,0.4);
+    border: 1px solid var(--border-line);
+  }
+  .screw-tl { top:9px; left:9px; }
+  .screw-tr { top:9px; right:9px; }
+  .screw-bl { bottom:9px; left:9px; }
+  .screw-br { bottom:9px; right:9px; }
+
+  .device-grid{
+    display:grid;
+    grid-template-columns: 320px 1fr;
+    gap:16px;
+  }
+  @media (max-width:820px){
+    .device-grid{grid-template-columns:1fr;}
+  }
+
+  /* FULL PORTRAIT VERTICAL MOBILE CAMERA VIEWFINDER OVERLAY */
+  .camera-view-panel {
+    display:none;
+    background: #000;
+    border-radius:20px;
+    overflow:hidden !important;
+    position:relative;
+    height: 490px;
+    border: 1px solid rgba(255,255,255,0.25);
+    box-shadow: inset 0 0 24px rgba(0,0,0,0.9), 0 10px 24px rgba(0,0,0,0.4);
+    margin-bottom:14px;
+    cursor:crosshair;
+  }
+  .camera-view-panel.open {
+    display:block;
+  }
+  #webcamFeed {
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    border-radius:19px;
+  }
+  #snapshotCanvas {
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    display:none;
+    z-index:1;
+    border-radius:19px;
+  }
+  
+  /* TOP HUD CONTROLS: CLOSE BTN, LOAD IMAGE, & VIEW MODE TOGGLE */
+  .cam-top-hud {
+    position:absolute;
+    top:12px;
+    left:12px;
+    right:12px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    z-index: 5;
+  }
+  .cam-hud-left {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  
+  /* REDESIGNED HIGH-TECH CLOSE BUTTON */
+  .cam-close-btn {
+    background: rgba(18,22,28,0.85);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.22);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-family: 'Satoshi', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    color: #F0F2F6;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.2);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s ease;
+  }
+  .cam-close-btn:hover {
+    background: #E53935;
+    border-color: #E53935;
+    color: #FFFFFF;
+    box-shadow: 0 4px 14px rgba(229,57,53,0.5);
+  }
+  .cam-close-icon {
+    font-size: 11px;
+    line-height: 1;
+    font-weight: 800;
+  }
+
+  .cam-upload-pill {
+    background: rgba(14,16,20,0.8);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 20px;
+    padding: 4px 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    font-family: 'Satoshi', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    color: #FFFFFF;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .cam-upload-pill:hover {
+    background: var(--accent-glow);
+    border-color: var(--accent-glow);
+  }
+
+  .view-mode-toggle {
+    background: rgba(14,16,20,0.8);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 20px;
+    padding: 2px;
+    display: flex;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  }
+  .view-mode-btn {
+    background: transparent;
+    border: none;
+    color: #A0A4B0;
+    font-family: 'Satoshi', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .view-mode-btn.active {
+    background: var(--accent-glow);
+    color: #FFFFFF !important;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  }
+
+  /* MOVABLE SPOT RETICLE IN CENTER OF CAMERA VIEW */
+  .spot-reticle {
+    position:absolute;
+    top:32%;left:50%;
+    width:36px;height:36px;
+    border: 2px solid var(--accent-glow);
+    border-radius: 8px;
+    transform:translate(-50%, -50%);
+    pointer-events:none;
+    box-shadow: 0 0 16px var(--accent-glow);
+    transition: top 0.1s ease, left 0.1s ease;
+    z-index: 4;
+  }
+  .spot-reticle::before {
+    content:'';position:absolute;top:50%;left:50%;width:4px;height:4px;
+    background:var(--accent-glow);border-radius:50%;transform:translate(-50%,-50%);
+  }
+
+  /* FLOATING IN-APP HUD NOTIFICATION TOAST ON CAMERA OVERLAY */
+  .cam-hud-toast {
+    position: absolute;
+    top: 52px;
+    left: 12px;
+    right: 12px;
+    background: rgba(242,101,34,0.92);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.4);
+    border-radius: 10px;
+    padding: 7px 12px;
+    color: #FFFFFF;
+    font-family: 'Satoshi', sans-serif;
+    font-size: 10.5px;
+    font-weight: 700;
+    text-align: center;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+    z-index: 10;
+    display: none;
+    animation: fadeInToast 0.3s ease;
+  }
+  @keyframes fadeInToast {
+    from { opacity:0; transform: translateY(-8px); }
+    to { opacity:1; transform: translateY(0); }
+  }
+
+  /* VIEW MODE 1: COMPACT TRANSLUCENT BOTTOM MATRIX SHEET */
+  .cam-matrix-full-panel {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(14,16,20,0.85);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid rgba(255,255,255,0.18);
+    border-radius: 0 0 19px 19px;
+    padding: 10px;
+    z-index: 5;
+    box-shadow: 0 -4px 16px rgba(0,0,0,0.5);
+  }
+  .cam-matrix-full-title {
+    font-family: 'Satoshi', sans-serif;
+    font-size: 9.5px;
+    letter-spacing: .12em;
+    color: #A5A9B4;
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-bottom: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .cam-matrix-full-grid {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+  }
+  .cam-matrix-full-grid::-webkit-scrollbar { display:none; }
+
+  .cam-matrix-full-card {
+    background: rgba(28,32,38,0.85);
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 6px;
+    padding: 5px 8px;
+    text-align: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    min-width: 62px;
+    transition: all 0.15s ease;
+  }
+  .cam-matrix-full-card:hover {
+    background: #2B303A;
+    border-color: var(--accent-glow);
+  }
+  .cam-matrix-full-card.selected {
+    background: var(--accent-glow);
+    border-color: var(--accent-glow);
+    box-shadow: 0 0 10px rgba(242,101,34,0.5);
+  }
+  .cam-matrix-full-fstop {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px;
+    font-weight: 800;
+    color: #FFFFFF;
+  }
+  .cam-matrix-full-shutter {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: #B0B4C0;
+    font-weight: 600;
+  }
+  .cam-matrix-full-card.selected .cam-matrix-full-shutter {
+    color: #FFFFFF !important;
+  }
+
+  .matrix-assign-bar {
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
+    align-items: center;
+  }
+
+  /* VIEW MODE 2: COMPACT METER CONTROL BAR */
+  .cam-bottom-bar {
+    position:absolute;
+    bottom:0;left:0;right:0;
+    background: rgba(12,14,18,0.88);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid rgba(255,255,255,0.18);
+    border-radius: 0 0 19px 19px;
+    padding: 10px;
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 5;
+  }
+  
+  .cam-controls-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .cam-meter-field {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .cam-meter-label {
+    font-family: 'Satoshi', sans-serif;
+    font-size: 9px;
+    letter-spacing: .12em;
+    color: #8E929C;
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+  .cam-meter-select {
+    background: #1C2026;
+    color: #FFF;
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 6px;
+    padding: 3px 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    width: 100%;
+  }
+
+  .cam-shutter-display {
+    background: #16181C;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 16px;
+    font-weight: 800;
+    color: #FFFFFF;
+    text-align: center;
+    min-width: 75px;
+  }
+
+  .capture-btn {
+    background: var(--panel-white);
+    color: var(--ink-main);
+    border: 1px solid var(--border-line);
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-family: 'Satoshi', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: var(--shadow-btn);
+  }
+  .capture-btn.frozen {
+    background: #E53935;
+    color: #FFF;
+    border-color: #E53935;
+  }
+
+  .auto-meter-all-btn {
+    background: var(--accent-glow);
+    color: #FFFFFF !important;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 14px;
+    font-family: 'Satoshi', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(242,101,34,0.4);
+    letter-spacing: .03em;
+  }
+
+  .target-select {
+    flex:1;
+    background: #1C2026;
+    color: #FFF;
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 6px;
+    padding: 5px 6px;
+    font-family: 'Satoshi', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .assign-btn {
+    background: var(--accent-glow);
+    color:#FFF;
+    border:none;
+    border-radius:6px;
+    padding:6px 14px;
+    font-family:'Satoshi', sans-serif;
+    font-size:11.5px;
+    font-weight:700;
+    cursor:pointer;
+    box-shadow:0 2px 6px rgba(0,0,0,0.4);
+    white-space:nowrap;
+  }
+
+  /* GLASS LCD DISPLAY PANEL WITH SOFT SUBTLE 45-DEGREE GLASS SHEEN & FLASH PULSE ANIMATION */
+  .readout-panel{
+    background: var(--panel-dark);
+    border-radius:18px;
+    padding:16px 18px;
+    box-shadow: 
+      inset 0 4px 14px rgba(0,0,0,0.9), 
+      inset 0 0 0 1px rgba(255,255,255,0.14), 
+      inset 0 1.5px 3px rgba(255,255,255,0.18),
+      0 6px 16px rgba(0,0,0,0.3);
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+    color: #F5F4EF;
+    position:relative;
+    overflow:hidden;
+    transition: box-shadow 0.4s ease, border-color 0.4s ease;
+  }
+  .readout-panel.sync-flash {
+    box-shadow: 
+      0 0 20px rgba(242,101,34,0.6),
+      inset 0 0 14px rgba(242,101,34,0.4),
+      inset 0 0 0 1px var(--accent-glow);
+  }
+  
+  .readout-panel::before {
+    content:'';
+    position:absolute;
+    top:0;left:0;width:100%;height:100%;
+    background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.06) 42%, rgba(255,255,255,0.01) 48%, transparent 100%);
+    pointer-events:none;
+    z-index:2;
+  }
+
+  .readout-topline{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    font-family:'Satoshi', monospace;
+    font-size:10px;
+    letter-spacing:.14em;
+    color:#8E8C82;
+    text-transform:uppercase;
+    font-weight:600;
+  }
+  .rec-dot{
+    width:7px;height:7px;border-radius:50%;
+    background:var(--accent-glow);
+    box-shadow:0 0 8px var(--accent-glow);
+    flex-shrink:0;
+  }
+  .count-badge{
+    margin-left:auto;
+    background:#25282D;
+    color:#D5D4CA;
+    padding:1px 6px;
+    border-radius:3px;
+    font-size:10px;
+    font-family:'JetBrains Mono', monospace;
+    font-weight:500;
+    border:1px solid rgba(255,255,255,0.08);
+  }
+  .readout-hero{
+    font-family:'JetBrains Mono', monospace;
+    font-size:36px;
+    font-weight:600;
+    letter-spacing:-.01em;
+    color:#FFFFFF !important;
+    text-shadow: 0 0 16px rgba(255,255,255,0.25);
+    line-height:1.05;
+    margin:2px 0;
+  }
+  .readout-subline{
+    font-family:'Satoshi', sans-serif;
+    font-size:12.5px;
+    color:#A09E94;
+    font-weight:500;
+    display:flex;
+    gap:10px;
+  }
+  .readout-subline span.val { color:#FFFFFF !important; font-family:'JetBrains Mono', monospace; font-weight:600; }
+
+  .readout-filename{
+    font-family:'Satoshi', sans-serif;
+    font-size:12px;
+    font-weight:500;
+    color:#D5D3CA;
+    letter-spacing:.01em;
+    line-height:1.35;
+    padding-top:8px;
+    border-top:1px solid #2F333A;
+    transition: color 0.3s ease;
+  }
+  .readout-filename.highlight-sync {
+    color: var(--accent-glow) !important;
+    font-weight: 700;
+  }
+  .level-meter{
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .lvl-label{
+    font-family:'Satoshi', sans-serif;
+    font-size:9.5px;
+    color:#8E8C82;
+    width:56px;
+    flex-shrink:0;
+    font-weight:600;
+    text-transform:uppercase;
+  }
+  .lvl-track{
+    position:relative;
+    flex:1;
+    height:6px;
+    background:#25282E;
+    border-radius:3px;
+    overflow:visible;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.6);
+  }
+  .lvl-fill{
+    height:100%;
+    border-radius:3px;
+    background:#8A887E;
+    width:0%;
+    transition:width .25s ease;
+  }
+  .lvl-fill-bright{background:#FFF;}
+  .lvl-badge{
+    position:absolute;
+    top:-15px;
+    right:0;
+    font-family:'JetBrains Mono', monospace;
+    font-size:9.5px;
+    color:#FFFFFF !important;
+    font-weight:500;
+  }
+
+  /* Right Control Workbench */
+  .control-panel{
+    background: rgba(0,0,0,0.04);
+    border-radius:16px;
+    padding:16px;
+    box-shadow: var(--shadow-inset);
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+    border:1px solid var(--border-line);
+  }
+  body.theme-dark .control-panel {
+    background: rgba(0,0,0,0.25);
+  }
+
+  /* ZONE GAUGE FACE WITH SOFT 45-DEGREE GLASS LENS SHEEN */
+  .ruler-face{
+    background: var(--panel-white);
+    border-radius:14px;
+    padding:12px 14px;
+    box-shadow: var(--shadow-inset), var(--shadow-soft), inset 0 1px 2px rgba(255,255,255,0.7);
+    position:relative;
+    border: 1px solid var(--border-line);
+    overflow:hidden;
+  }
+  .ruler-face::before {
+    content:'';
+    position:absolute;
+    top:0;left:0;width:100%;height:100%;
+    background: linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.08) 42%, rgba(255,255,255,0.01) 48%, transparent 100%);
+    pointer-events:none;
+    z-index:2;
+  }
+
+  .meter-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:12px;
+    padding-bottom:6px;
+    border-bottom:1px solid var(--border-line);
+    margin-bottom:4px;
+    align-items:center;
+  }
+  .meter-field label{
+    display:block;
+    font-family:'Satoshi', sans-serif;
+    font-size:9.5px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--ink-sub);
+    margin-bottom:2px;
+    font-weight:600;
+  }
+  
+  /* TAP SELECTORS FOR ISO AND APERTURE */
+  .meter-field select {
+    background: var(--panel-white);
+    border: 1px solid var(--border-line);
+    border-radius: 6px;
+    color: var(--ink-main);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 2px 6px;
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+    box-shadow: var(--shadow-btn);
+  }
+
+  .film-perf{
+    height:5px;
+    margin:5px 1px;
+    opacity:.35;
+    border-radius:2px;
+    background-image:repeating-radial-gradient(circle at 5px 2.5px, var(--ink-sub) 0 1.5px, transparent 12px);
+  }
+
+  /* Dynamic Range Zone Strip & Touch Zone Buttons (0 to 10) */
+  .zone-strip{
+    position:relative;
+    height:46px;
+    border-radius:8px;
+    margin-top:4px;
+    background:linear-gradient(to right, #101010 0%, #E8E5DC 100%);
+    box-shadow: inset 0 2px 6px rgba(0,0,0,0.5), 0 0 0 1px var(--border-line);
+    cursor:pointer;
+    touch-action:none;
+  }
+  .zone-ticks{position:absolute;inset:0;display:flex;pointer-events:none;}
+  .zone-tick{flex:1;border-right:1px solid rgba(0,0,0,0.15);}
+  .zone-tick:last-child{border-right:none;}
+
+  .zone-numbers{
+    display:flex;
+    justify-content:space-between;
+    margin-top:5px;
+    gap:2px;
+    position:relative;
+    z-index:3;
+  }
+  .zone-num-btn {
+    flex:1;
+    text-align:center;
+    font-family:'JetBrains Mono', monospace;
+    font-size:10.5px;
+    font-weight:600;
+    color:var(--ink-sub);
+    padding:5px 0;
+    border-radius:6px;
+    cursor:pointer;
+    transition:all 0.15s ease;
+    background: var(--panel-white);
+    box-shadow: var(--shadow-btn);
+    border:1px solid var(--border-line);
+  }
+  .zone-num-btn.active-target {
+    background: #1C1A17 !important;
+    color: #FFFFFF !important;
+    font-weight:700;
+    border-color: #1C1A17 !important;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  }
+
+  /* Pins Gliding on Zone Strip */
+  .zone-mark{
+    position:absolute;top:-22px;
+    display:flex;flex-direction:column;align-items:center;
+    transition:left 0.25s cubic-bezier(0.2, 0, 0.2, 1);
+    z-index:10;
+    cursor:pointer;
+  }
+  .zone-mark.active-slot .pin {
+    box-shadow:0 0 0 2px #FFF, 0 0 0 4px #1C1A17;
+    transform:scale(1.1);
+  }
+  .zone-mark .pin{
+    width:11px;height:11px;border-radius:50%;
+    background:#1C1A17;
+    box-shadow:0 0 0 1.5px #FFF, 0 2px 4px rgba(0,0,0,0.3);
+    margin:0 auto;
+  }
+  .zone-mark .stem{width:1.5px;height:5.5px;background:#1C1A17;margin:0 auto;}
+  .zone-mark .tag{
+    font-family:'JetBrains Mono', monospace;
+    font-size:9.5px;
+    font-weight:700;
+    color: #FFFFFF !important;
+    background: #1C1A17 !important;
+    padding:1.5px 5.5px;
+    border-radius:4px;
+    white-space:nowrap;
+    margin-bottom:1.5px;
+    box-shadow:0 2px 5px rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.2);
+  }
+
+  /* CYLINDRICAL GLASS COVER FOR VERTICAL ROLLER WHEELS */
+  .rollers-wrap {
+    display:flex;
+    gap:12px;
+    justify-content:center;
+    align-items:stretch;
+  }
+
+  .roller-column {
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:8px;
+  }
+
+  .roller-wheel-body {
+    width:100%;
+    height:200px;
+    background: var(--roller-bg);
+    border-radius:20px;
+    box-shadow: 
+      inset 0 18px 20px rgba(0,0,0,0.92), 
+      inset 0 -18px 20px rgba(0,0,0,0.92), 
+      inset 0 0 0 1px rgba(255,255,255,0.1),
+      0 4px 10px rgba(0,0,0,0.2);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:12px 5px;
+    position:relative;
+    overflow-y:auto;
+    scrollbar-width:none;
+    touch-action:pan-y;
+    border:1px solid rgba(255,255,255,0.06);
+    scroll-snap-type: y mandatory;
+  }
+  .roller-wheel-body::before {
+    content:'';
+    position:absolute;
+    top:0;left:0;width:100%;height:100%;
+    background: linear-gradient(135deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.05) 42%, rgba(255,255,255,0.01) 48%, transparent 100%);
+    pointer-events:none;
+    z-index:3;
+  }
+  .roller-wheel-body::-webkit-scrollbar { display:none; }
+
+  /* 1/3 STOP DETAILED ROLLER ITEMS WITH SIDE GRADUATION TICKS */
+  .roller-item {
+    width:100%;
+    text-align:center;
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px;
+    font-weight:600;
+    color:#5E626B;
+    padding:5px 0;
+    cursor:pointer;
+    border-radius:12px;
+    transition:all 0.15s ease;
+    flex-shrink:0;
+    scroll-snap-align: center;
+    position:relative;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .roller-item:hover { color:#D5D8DF; }
+  
+  .roller-item::before, .roller-item::after {
+    content:'';
+    position:absolute;
+    top:50%;
+    width:4.5px;
+    height:1px;
+    background: rgba(255,255,255,0.15);
+    transform:translateY(-50%);
+  }
+  .roller-item::before { left:7px; }
+  .roller-item::after { right:7px; }
+
+  .roller-item.is-full-stop {
+    font-weight:700;
+    color:#9A9EA8;
+  }
+  .roller-item.is-full-stop::before, .roller-item.is-full-stop::after {
+    width:7px;
+    height:1.4px;
+    background: rgba(255,255,255,0.35);
+  }
+
+  /* Glowing Amber Active Pill inside Glass Tube */
+  .roller-item.selected {
+    background: var(--accent-glow);
+    color: #FFFFFF !important;
+    font-weight:800;
+    box-shadow: 0 0 14px rgba(242,101,34,0.45), inset 0 1px 0 rgba(255,255,255,0.4);
+  }
+  .roller-item.selected::before, .roller-item.selected::after {
+    background: #FFFFFF;
+  }
+
+  /* REFINED 3-LINE TYPOGRAPHY FOOTER FOR ROLLER WHEEL COLUMNS */
+  .roller-footer {
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    gap:3px;
+    width:100%;
+    padding-top:4px;
+  }
+  .roller-title-primary {
+    font-family:'Satoshi', sans-serif;
+    font-size:11px;
+    font-weight:700;
+    color:var(--ink-main);
+    letter-spacing:.03em;
+    line-height:1.1;
+    text-transform:uppercase;
+  }
+  .roller-title-sub {
+    font-family:'Satoshi', sans-serif;
+    font-size:9.5px;
+    font-weight:500;
+    color:var(--ink-sub);
+    letter-spacing:.02em;
+    line-height:1;
+    text-transform:uppercase;
+  }
+  .roller-zone-badge {
+    font-family:'JetBrains Mono', monospace;
+    font-size:9.5px;
+    font-weight:700;
+    color:var(--accent-glow);
+    background: rgba(242,101,34,0.08);
+    border: 1px solid rgba(242,101,34,0.25);
+    padding:2px 8px;
+    border-radius:4px;
+    margin-top:2px;
+  }
+
+  /* Single Bottom Action Bar */
+  .action-bar {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+    margin-top:2px;
+  }
+  .add-btn {
+    background: var(--panel-white);
+    border:1px solid var(--border-line);
+    border-radius:9px;
+    padding:9px 14px;
+    font-family:'Satoshi', sans-serif;
+    font-size:11.5px;
+    font-weight:700;
+    color:var(--ink-main);
+    cursor:pointer;
+    flex:1;
+    box-shadow: var(--shadow-btn);
+    text-align:center;
+    letter-spacing:.04em;
+  }
+  .add-btn:hover { background: #F3F1EA; }
+  .reset-btn {
+    background:transparent;
+    border:none;
+    color:var(--ink-sub);
+    font-family:'Satoshi', sans-serif;
+    font-size:11px;
+    cursor:pointer;
+    text-decoration:underline;
+    padding:4px;
+    font-weight:500;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Hidden File Input for Image Uploading -->
+  <input type="file" id="imageFileInput" accept="image/*" style="display:none;">
+
+  <!-- Top Bar Controls -->
+  <div class="top-bar">
+    <span class="app-brand">ZONE SYSTEM EXPOSURE WORKBENCH</span>
+    <div class="top-btn-group">
+      <button class="upload-btn-top" id="topUploadBtn" type="button">LOAD IMAGE</button>
+      <button class="cam-toggle-btn" id="camToggleBtn" type="button">SPOT METER: CAMERA</button>
+      <button class="theme-toggle-btn" id="themeToggleBtn" type="button">MODE: LIGHT / DARK</button>
+    </div>
+  </div>
+
+  <div class="device">
+    <!-- Corner Screws -->
+    <div class="screw screw-tl"></div>
+    <div class="screw screw-tr"></div>
+    <div class="screw screw-bl"></div>
+    <div class="screw screw-br"></div>
+
+    <div class="device-grid">
+
+      <!-- Left Column: Camera Viewfinder & Glass LCD Display Panel -->
+      <div>
+
+        <!-- FULL PORTRAIT VERTICAL MOBILE CAMERA VIEWFINDER OVERLAY -->
+        <div class="camera-view-panel" id="cameraViewPanel">
+          <video id="webcamFeed" autoplay playsinline muted></video>
+          <canvas id="snapshotCanvas"></canvas>
+          <canvas id="meterCanvas" style="display:none;"></canvas>
+          
+          <!-- TOP HUD CONTROLS: REDESIGNED CLOSE BTN, LOAD IMAGE, & VIEW MODE TOGGLE SWITCH -->
+          <div class="cam-top-hud">
+            <div class="cam-hud-left">
+              <button class="cam-close-btn" id="camCloseBtn" type="button">
+                <span class="cam-close-icon">✕</span> CLOSE
+              </button>
+              <button class="cam-upload-pill" id="camUploadPillBtn" type="button">LOAD IMAGE</button>
+            </div>
+
+            <!-- TOGGLE BUTTON BETWEEN MATRIX OVERVIEW (DEFAULT) AND COMPACT METER BAR -->
+            <div class="view-mode-toggle">
+              <button class="view-mode-btn active" id="btnModeMatrix" type="button">MATRIX</button>
+              <button class="view-mode-btn" id="btnModeMeter" type="button">COMPACT</button>
+            </div>
+          </div>
+
+          <!-- FLOATING IN-APP HUD NOTIFICATION TOAST ON CAMERA OVERLAY -->
+          <div class="cam-hud-toast" id="camHudToast">
+            ✓ 3-ZONE EXPOSURE AUTO-SYNCED TO ROLLERS
+          </div>
+
+          <!-- MOVABLE SPOT RETICLE IN CENTER OF CAMERA VIEW -->
+          <div class="spot-reticle" id="spotReticle"></div>
+
+          <!-- VIEW MODE 1: COMPACT TRANSLUCENT BOTTOM MATRIX SHEET -->
+          <div class="cam-matrix-full-panel" id="viewModeMatrixPanel">
+            <div class="cam-matrix-full-title">
+              <span>EXPOSURE PAIRS MATRIX</span>
+              <button class="auto-meter-all-btn" id="matrixAutoMeterBtn" type="button">AUTO-METER ALL ZONES</button>
+            </div>
+            <div class="cam-matrix-full-grid" id="camMatrixFullGrid">
+              <!-- Dynamically populated horizontal exposure pair cards -->
+            </div>
+            <div class="matrix-assign-bar">
+              <select class="target-select" id="matrixTargetSelect"></select>
+              <button class="assign-btn" id="matrixAssignBtn" type="button">ASSIGN POINT</button>
+            </div>
+          </div>
+
+          <!-- VIEW MODE 2: COMPACT METER CONTROL BAR (MATCHING SCREENSHOT 1) -->
+          <div class="cam-bottom-bar" id="viewModeMeterBar">
+            <div class="cam-controls-row">
+              <div class="cam-meter-field">
+                <span class="cam-meter-label">APERTURE</span>
+                <select class="cam-meter-select" id="camFstopSelect">
+                  <option>1.0</option><option>1.4</option><option>2.0</option><option>2.8</option>
+                  <option>4.0</option><option>5.6</option><option selected>8.0</option><option>11.0</option>
+                  <option>16.0</option><option>22.0</option><option>32.0</option>
+                </select>
+              </div>
+
+              <div class="cam-meter-field">
+                <span class="cam-meter-label">ISO</span>
+                <select class="cam-meter-select" id="camIsoSelect">
+                  <option>50</option><option>100</option><option>200</option>
+                  <option selected>400</option><option>800</option><option>1600</option><option>3200</option>
+                </select>
+              </div>
+
+              <div class="cam-meter-field">
+                <span class="cam-meter-label">SHUTTER</span>
+                <div class="cam-shutter-display" id="camShutterVal">1/60</div>
+              </div>
+
+              <button class="capture-btn" id="captureBtn" type="button">FREEZE</button>
+            </div>
+
+            <div class="cam-controls-row">
+              <button class="auto-meter-all-btn" id="barAutoMeterBtn" type="button" style="width:100%;">AUTO-METER ALL 3 ZONES IN 1 TAP</button>
+            </div>
+
+            <div class="cam-controls-row">
+              <select class="target-select" id="targetPointSelect"></select>
+              <button class="assign-btn" id="assignPointBtn" type="button">ASSIGN POINT</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Glass LCD Display Panel -->
+        <div class="readout-panel" id="readoutPanel">
+          <div class="readout-topline">
+            <span class="rec-dot"></span> READING
+            <span class="count-badge" id="pointCount">3 POINTS</span>
+          </div>
+          <div class="readout-hero" id="rShutter">1/30</div>
+          <div class="readout-subline">
+            <span>Aperture: <span class="val" id="rFstopLcd">f/8</span></span>
+            <span>ISO: <span class="val" id="rIsoLcd">400</span></span>
+          </div>
+          <div class="readout-filename" id="rSpanLine">DYNAMIC RANGE — N · 5.0 STOPS</div>
+
+          <div class="level-meter" style="margin-top:auto;">
+            <span class="lvl-label">SHADOW</span>
+            <div class="lvl-track"><div class="lvl-fill" id="lvlDarkFill"></div><span class="lvl-badge" id="lvlDarkBadge">Zone III</span></div>
+          </div>
+          <div class="level-meter">
+            <span class="lvl-label">HIGHLIGHT</span>
+            <div class="lvl-track"><div class="lvl-fill lvl-fill-bright" id="lvlBrightFill"></div><span class="lvl-badge" id="lvlBrightBadge">Zone VIII</span></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right Controls -->
+      <div class="control-panel">
+
+        <!-- Zone Gauge Face with Soft 45-Degree Glass Sheen -->
+        <div class="ruler-face">
+          <div class="meter-row">
+            <div class="meter-field">
+              <label for="iso">ISO</label>
+              <!-- TAP SELECTOR FOR DETAILED ISO VALUES -->
+              <select id="iso">
+                <option>6</option><option>8</option><option>10</option><option>12</option>
+                <option>16</option><option>20</option><option>25</option><option>32</option>
+                <option>40</option><option>50</option><option>64</option><option>80</option>
+                <option>100</option><option>125</option><option>160</option><option>200</option>
+                <option>250</option><option>320</option><option selected>400</option><option>500</option>
+                <option>640</option><option>800</option><option>1000</option><option>1250</option>
+                <option>1600</option><option>2000</option><option>2500</option><option>3200</option>
+                <option>4000</option><option>5000</option><option>6400</option><option>8000</option>
+                <option>10000</option><option>12800</option><option>25600</option><option>51200</option><option>102400</option>
+              </select>
+            </div>
+
+            <div class="meter-field">
+              <label for="fstop">Aperture</label>
+              <!-- TAP SELECTOR FOR DETAILED 1/3-STOP APERTURE VALUES -->
+              <select id="fstop">
+                <option>1.0</option><option>1.1</option><option>1.2</option><option>1.4</option>
+                <option>1.6</option><option>1.8</option><option>2.0</option><option>2.2</option>
+                <option>2.5</option><option>2.8</option><option>3.2</option><option>3.5</option>
+                <option>4.0</option><option>4.5</option><option>5.0</option><option>5.6</option>
+                <option>6.3</option><option>7.1</option><option selected>8.0</option><option>9.0</option>
+                <option>10.0</option><option>11.0</option><option>13.0</option><option>14.0</option>
+                <option>16.0</option><option>18.0</option><option>20.0</option><option>22.0</option>
+                <option>25.0</option><option>29.0</option><option>32.0</option>
+              </select>
+            </div>
+
+            <div class="meter-field" style="margin-left:auto;">
+              <label>DYNAMIC RANGE</label>
+              <span id="rangeReadout" style="font-family:'JetBrains Mono',monospace;color:var(--ink-main);font-size:14px;font-weight:600;">5.0 STOPS</span>
+            </div>
+          </div>
+
+          <div class="film-perf" aria-hidden="true"></div>
+          <div class="zone-strip" id="zoneStrip"></div>
+          <div class="film-perf" aria-hidden="true"></div>
+
+          <!-- Touch Zone Buttons (0 to 10) -->
+          <div class="zone-numbers" id="zoneNumbers"></div>
+        </div>
+
+        <!-- Vertical Shutter Roller Wheels inside Glass Tubes -->
+        <div class="rollers-wrap" id="rollersWrap"></div>
+
+        <div class="action-bar">
+          <button class="add-btn" id="addPointBtn" type="button">+ ADD METERING POINT</button>
+          <button class="reset-btn" id="resetBtn" type="button">RESET DEFAULTS</button>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  // FULL DETAILED 1/3-STOP SHUTTER SPEED INCREMENTS
+  const SHUTTERS = [
+    {label:"1/8000", v:1/8000, full:true},  {label:"1/6400", v:1/6400, full:false}, {label:"1/5000", v:1/5000, full:false},
+    {label:"1/4000", v:1/4000, full:true},  {label:"1/3200", v:1/3200, full:false}, {label:"1/2500", v:1/2500, full:false},
+    {label:"1/2000", v:1/2000, full:true},  {label:"1/1600", v:1/1600, full:false}, {label:"1/1250", v:1/1250, full:false},
+    {label:"1/1000", v:1/1000, full:true},  {label:"1/800",  v:1/800,  full:false}, {label:"1/640",  v:1/640,  full:false},
+    {label:"1/500",  v:1/500,  full:true},  {label:"1/400",  v:1/400,  full:false}, {label:"1/320",  v:1/320,  full:false},
+    {label:"1/250",  v:1/250,  full:true},  {label:"1/200",  v:1/200,  full:false}, {label:"1/160",  v:1/160,  full:false},
+    {label:"1/125",  v:1/125,  full:true},  {label:"1/100",  v:1/100,  full:false}, {label:"1/80",   v:1/80,   full:false},
+    {label:"1/60",   v:1/60,   full:true},  {label:"1/50",   v:1/50,   full:false}, {label:"1/40",   v:1/40,   full:false},
+    {label:"1/30",   v:1/30,   full:true},  {label:"1/25",   v:1/25,   full:false}, {label:"1/20",   v:1/20,   full:false},
+    {label:"1/15",   v:1/15,   full:true},  {label:"1/13",   v:1/13,   full:false}, {label:"1/10",   v:1/10,   full:false},
+    {label:"1/8",    v:1/8,    full:true},  {label:"1/6",    v:1/6,    full:false}, {label:"1/5",    v:1/5,    full:false},
+    {label:"1/4",    v:1/4,    full:true},  {label:"1/3",    v:1/3,    full:false}, {label:"0.4\"",  v:0.4,    full:false},
+    {label:"0.5\"",  v:0.5,    full:true},  {label:"0.6\"",  v:0.6,    full:false}, {label:"0.8\"",  v:0.8,    full:false},
+    {label:"1\"",    v:1,      full:true},  {label:"1.3\"",  v:1.3,    full:false}, {label:"1.6\"",  v:1.6,    full:false},
+    {label:"2\"",    v:2,      full:true},  {label:"2.5\"",  v:2.5,    full:false}, {label:"3.2\"",  v:3.2,    full:false},
+    {label:"4\"",    v:4,      full:true},  {label:"5\"",    v:5,      full:false}, {label:"6\"",    v:6,      full:false},
+    {label:"8\"",    v:8,      full:true},  {label:"10\"",   v:10,     full:false}, {label:"13\"",   v:13,     full:false},
+    {label:"15\"",   v:15,     full:true},  {label:"20\"",   v:20,     full:false}, {label:"25\"",   v:25,     full:false},
+    {label:"30\"",   v:30,     full:true}
+  ];
+
+  const FULL_FSTOPS = [1.0, 1.4, 2.0, 2.8, 4.0, 5.6, 8.0, 11.0, 16.0, 22.0, 32.0];
+
+  const DEFAULT_SLOTS = [
+    { id: 1, mainTitle: "POINT 1", subTitle: "(SHADOW)", shutter: 1/4, anchorZone: 3 },
+    { id: 2, mainTitle: "POINT 2", subTitle: "(MIDTONE)", shutter: 1/30, anchorZone: null },
+    { id: 3, mainTitle: "POINT 3", subTitle: "(HIGHLIGHT)", shutter: 1/125, anchorZone: null }
+  ];
+
+  let slots = DEFAULT_SLOTS.map(s => ({...s}));
+  let anchorSlotIndex = 0;
+  let liveSpotShutterVal = 1/60;
+  let isFrozen = false;
+  let isLoadedImageMode = false;
+
+  // Touch Spot Coords (Normalized 0 to 1)
+  let spotPos = { x: 0.5, y: 0.32 };
+
+  // Theme Toggle Button
+  const themeToggleBtn = document.getElementById('themeToggleBtn');
+  themeToggleBtn.addEventListener('click', () => {
+    document.body.classList.toggle('theme-dark');
+    const isDark = document.body.classList.contains('theme-dark');
+    themeToggleBtn.textContent = isDark ? 'MODE: DARK' : 'MODE: LIGHT';
+  });
+
+  // Camera Meter View Modes: 'matrix' (Default) vs 'meter'
+  let activeCamViewMode = 'matrix';
+  const btnModeMatrix = document.getElementById('btnModeMatrix');
+  const btnModeMeter = document.getElementById('btnModeMeter');
+  const viewModeMatrixPanel = document.getElementById('viewModeMatrixPanel');
+  const viewModeMeterBar = document.getElementById('viewModeMeterBar');
+
+  btnModeMatrix.addEventListener('click', () => setCamViewMode('matrix'));
+  btnModeMeter.addEventListener('click', () => setCamViewMode('meter'));
+
+  function setCamViewMode(mode) {
+    activeCamViewMode = mode;
+    if(mode === 'matrix') {
+      btnModeMatrix.classList.add('active');
+      btnModeMeter.classList.remove('active');
+      viewModeMatrixPanel.style.display = 'block';
+      viewModeMeterBar.style.display = 'none';
+    } else {
+      btnModeMeter.classList.add('active');
+      btnModeMatrix.classList.remove('active');
+      viewModeMatrixPanel.style.display = 'none';
+      viewModeMeterBar.style.display = 'flex';
+    }
+  }
+
+  // Live Camera & Image Spot Meter Elements
+  const camToggleBtn = document.getElementById('camToggleBtn');
+  const camCloseBtn = document.getElementById('camCloseBtn');
+  const topUploadBtn = document.getElementById('topUploadBtn');
+  const camUploadPillBtn = document.getElementById('camUploadPillBtn');
+  const imageFileInput = document.getElementById('imageFileInput');
+  const cameraViewPanel = document.getElementById('cameraViewPanel');
+  const webcamFeed = document.getElementById('webcamFeed');
+  const snapshotCanvas = document.getElementById('snapshotCanvas');
+  const meterCanvas = document.getElementById('meterCanvas');
+  const spotReticle = document.getElementById('spotReticle');
+  const camShutterValEl = document.getElementById('camShutterVal');
+  const captureBtn = document.getElementById('captureBtn');
+  const matrixAutoMeterBtn = document.getElementById('matrixAutoMeterBtn');
+  const barAutoMeterBtn = document.getElementById('barAutoMeterBtn');
+  const camFstopSelect = document.getElementById('camFstopSelect');
+  const camIsoSelect = document.getElementById('camIsoSelect');
+  const targetPointSelect = document.getElementById('targetPointSelect');
+  const matrixTargetSelect = document.getElementById('matrixTargetSelect');
+  const assignPointBtn = document.getElementById('assignPointBtn');
+  const matrixAssignBtn = document.getElementById('matrixAssignBtn');
+  const camMatrixFullGrid = document.getElementById('camMatrixFullGrid');
+  const readoutPanel = document.getElementById('readoutPanel');
+  const camHudToast = document.getElementById('camHudToast');
+  let mediaStream = null;
+  let meterInterval = null;
+
+  function populateTargetPointSelect() {
+    const optsHtml = slots.map((s, idx) => 
+      `<option value="${idx}" ${idx === anchorSlotIndex ? 'selected' : ''}>APPLY TO: ${s.mainTitle} ${s.subTitle}</option>`
+    ).join('');
+    targetPointSelect.innerHTML = optsHtml;
+    matrixTargetSelect.innerHTML = optsHtml;
+  }
+
+  // IMAGE FILE UPLOADER HANDLER
+  topUploadBtn.addEventListener('click', () => imageFileInput.click());
+  camUploadPillBtn.addEventListener('click', () => imageFileInput.click());
+
+  imageFileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        cameraViewPanel.classList.add('open');
+        camToggleBtn.classList.add('active');
+        setCamViewMode('matrix');
+        populateTargetPointSelect();
+
+        snapshotCanvas.width = img.width;
+        snapshotCanvas.height = img.height;
+        const sCtx = snapshotCanvas.getContext('2d');
+        sCtx.drawImage(img, 0, 0);
+        snapshotCanvas.style.display = 'block';
+
+        isFrozen = true;
+        isLoadedImageMode = true;
+        captureBtn.textContent = 'RESUME LIVE';
+        captureBtn.classList.add('frozen');
+
+        sampleImageSpotMetering();
+      };
+      img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // Sync main ISO and Aperture selectors with camera overlay selectors
+  document.getElementById('iso').addEventListener('change', (e) => {
+    camIsoSelect.value = e.target.value;
+  });
+  document.getElementById('fstop').addEventListener('change', (e) => {
+    camFstopSelect.value = e.target.value;
+  });
+  camIsoSelect.addEventListener('change', (e) => {
+    document.getElementById('iso').value = e.target.value;
+    if(isLoadedImageMode) sampleImageSpotMetering();
+    else compute();
+  });
+  camFstopSelect.addEventListener('change', (e) => {
+    document.getElementById('fstop').value = e.target.value;
+    if(isLoadedImageMode) sampleImageSpotMetering();
+    else compute();
+  });
+
+  // SINGLE-TAP SEAMLESS AUTO-METER & SYSTEM SYNC (NO BROWSER POPUPS!)
+  matrixAutoMeterBtn.addEventListener('click', autoMeterAll3Zones);
+  barAutoMeterBtn.addEventListener('click', autoMeterAll3Zones);
+
+  function autoMeterAll3Zones() {
+    // 1. Freeze current snapshot if live
+    if(!isFrozen && !isLoadedImageMode && webcamFeed.videoWidth) {
+      toggleFreeze();
+    }
+
+    let sourceCanvas = isFrozen || isLoadedImageMode ? snapshotCanvas : null;
+    let sCtx;
+    
+    if(!sourceCanvas || !sourceCanvas.width) {
+      meterCanvas.width = 160;
+      meterCanvas.height = 160;
+      sCtx = meterCanvas.getContext('2d');
+      sCtx.drawImage(webcamFeed, 0, 0, 160, 160);
+      sourceCanvas = meterCanvas;
+    } else {
+      sCtx = sourceCanvas.getContext('2d');
+    }
+
+    // 2. Sample 400 points across image frame
+    const samples = [];
+    const stepX = Math.max(1, Math.floor(sourceCanvas.width / 20));
+    const stepY = Math.max(1, Math.floor(sourceCanvas.height / 20));
+
+    for(let y=stepY; y<sourceCanvas.height; y+=stepY) {
+      for(let x=stepX; x<sourceCanvas.width; x+=stepX) {
+        const pix = sCtx.getImageData(x, y, 1, 1).data;
+        const lum = 0.299 * pix[0] + 0.587 * pix[1] + 0.114 * pix[2];
+        samples.push(lum);
+      }
+    }
+
+    if(samples.length < 5) return;
+    samples.sort((a,b) => a - b);
+
+    // 3. Extract Shadow (10%), Midtone (50%), Highlight (90%)
+    const shadowLum = samples[Math.floor(samples.length * 0.10)];
+    const midtoneLum = samples[Math.floor(samples.length * 0.50)];
+    const highlightLum = samples[Math.floor(samples.length * 0.90)];
+
+    const isoVal = parseFloat(camIsoSelect.value) || 400;
+    const fstopVal = parseFloat(camFstopSelect.value) || 8;
+
+    function lumToShutter(lum) {
+      const normLum = Math.max(1, lum) / 255;
+      const ev100 = Math.log2(normLum * 1000);
+      const seconds = (fstopVal * fstopVal) / (Math.pow(2, ev100) * (isoVal / 100));
+      return nearestShutterLabel(seconds).v;
+    }
+
+    // 4. Directly SYNC into all 3 Zone System slots!
+    if(slots.length >= 1) slots[0].shutter = lumToShutter(shadowLum);
+    if(slots.length >= 2) slots[1].shutter = lumToShutter(midtoneLum);
+    if(slots.length >= 3) slots[2].shutter = lumToShutter(highlightLum);
+
+    anchorSlotIndex = 0;
+    compute();
+
+    // 5. IN-APP FLOATING CAMERA HUD TOAST & LCD GLOW (ZERO BROWSER POPUPS!)
+    const s1Label = nearestShutterLabel(slots[0].shutter).label;
+    const s2Label = nearestShutterLabel(slots[1].shutter).label;
+    const s3Label = nearestShutterLabel(slots[2].shutter).label;
+
+    camHudToast.textContent = `✓ AUTO-SYNCED: SHADOW ${s1Label} · MID ${s2Label} · HIGHLIGHT ${s3Label}`;
+    camHudToast.style.display = 'block';
+
+    rSpanLine.textContent = `AUTO-SYNCED 3 POINTS — SHADOW ${s1Label} · MID ${s2Label} · HIGHLIGHT ${s3Label}`;
+    rSpanLine.classList.add('highlight-sync');
+    readoutPanel.classList.add('sync-flash');
+
+    setTimeout(() => {
+      camHudToast.style.display = 'none';
+      readoutPanel.classList.remove('sync-flash');
+      rSpanLine.classList.remove('highlight-sync');
+      compute();
+    }, 2800);
+  }
+
+  // Freeze / Unfreeze Camera Snapshot
+  captureBtn.addEventListener('click', toggleFreeze);
+  camCloseBtn.addEventListener('click', stopCameraStream);
+
+  function toggleFreeze() {
+    if(isLoadedImageMode) {
+      isLoadedImageMode = false;
+      snapshotCanvas.style.display = 'none';
+      captureBtn.textContent = 'FREEZE';
+      captureBtn.classList.remove('frozen');
+      isFrozen = false;
+      return;
+    }
+    isFrozen = !isFrozen;
+    if(isFrozen) {
+      snapshotCanvas.width = webcamFeed.videoWidth || 640;
+      snapshotCanvas.height = webcamFeed.videoHeight || 480;
+      const sCtx = snapshotCanvas.getContext('2d');
+      sCtx.drawImage(webcamFeed, 0, 0, snapshotCanvas.width, snapshotCanvas.height);
+      snapshotCanvas.style.display = 'block';
+      captureBtn.textContent = 'RESUME';
+      captureBtn.classList.add('frozen');
+    } else {
+      snapshotCanvas.style.display = 'none';
+      captureBtn.textContent = 'FREEZE';
+      captureBtn.classList.remove('frozen');
+    }
+  }
+
+  // Tap Anywhere on Camera Stream or Uploaded Image to Move Spot Reticle
+  cameraViewPanel.addEventListener('click', (e) => {
+    if(e.target.closest('#viewModeMeterBar') || e.target.closest('#viewModeMatrixPanel') || e.target.closest('.cam-top-hud')) return;
+    const rect = cameraViewPanel.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const clickY = e.clientY - rect.top;
+    
+    spotPos.x = Math.max(0.08, Math.min(0.92, clickX / rect.width));
+    spotPos.y = Math.max(0.08, Math.min(0.65, clickY / rect.height));
+
+    spotReticle.style.left = (spotPos.x * 100) + '%';
+    spotReticle.style.top = (spotPos.y * 100) + '%';
+
+    if(isLoadedImageMode || isFrozen) {
+      sampleImageSpotMetering();
+    }
+  });
+
+  camToggleBtn.addEventListener('click', async () => {
+    const isOpen = cameraViewPanel.classList.contains('open');
+    if(!isOpen) {
+      try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        webcamFeed.srcObject = mediaStream;
+        cameraViewPanel.classList.add('open');
+        camToggleBtn.classList.add('active');
+        setCamViewMode('matrix');
+        populateTargetPointSelect();
+        startCameraSpotMetering();
+      } catch(err) {
+        // Subtle in-app toast if camera is blocked
+        camHudToast.textContent = 'CAMERA ACCESS UNAVAILABLE';
+        camHudToast.style.display = 'block';
+        setTimeout(() => { camHudToast.style.display = 'none'; }, 2000);
+      }
+    } else {
+      stopCameraStream();
+    }
+  });
+
+  function stopCameraStream() {
+    if(mediaStream) {
+      mediaStream.getTracks().forEach(t => t.stop());
+      mediaStream = null;
+    }
+    if(meterInterval) clearInterval(meterInterval);
+    cameraViewPanel.classList.remove('open');
+    camToggleBtn.classList.remove('active');
+    if(isFrozen || isLoadedImageMode) toggleFreeze();
+  }
+
+  function renderCameraMatrixFullGrid(ev100Val, isoVal, currFstop) {
+    camMatrixFullGrid.innerHTML = FULL_FSTOPS.map(f => {
+      const equivSec = (f * f / Math.pow(2, ev100Val)) * (100 / isoVal);
+      const nearest = nearestShutterLabel(equivSec);
+      const isSel = Math.abs(f - currFstop) < 0.05;
+
+      return `
+        <div class="cam-matrix-full-card ${isSel ? 'selected' : ''}" onclick="window.selectCameraMatrixPair(${f}, ${nearest.v})">
+          <div class="cam-matrix-full-fstop">f/${f.toFixed(1).replace('.0','')}</div>
+          <div class="cam-matrix-full-shutter">${nearest.label}</div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  window.selectCameraMatrixPair = function(fstopVal, shutterSec) {
+    camFstopSelect.value = fstopVal;
+    document.getElementById('fstop').value = fstopVal;
+    liveSpotShutterVal = shutterSec;
+    compute();
+  };
+
+  function sampleImageSpotMetering() {
+    if(!snapshotCanvas.width) return;
+    const sCtx = snapshotCanvas.getContext('2d');
+    const sampleX = Math.round(spotPos.x * snapshotCanvas.width);
+    const sampleY = Math.round(spotPos.y * snapshotCanvas.height);
+
+    const imgData = sCtx.getImageData(Math.max(0, sampleX - 5), Math.max(0, sampleY - 5), 10, 10);
+    let sum = 0;
+    for(let i=0; i<imgData.data.length; i+=4) {
+      sum += 0.299 * imgData.data[i] + 0.587 * imgData.data[i+1] + 0.114 * imgData.data[i+2];
+    }
+    const avgBrightness = sum / (imgData.data.length / 4);
+    
+    const isoVal = parseFloat(camIsoSelect.value) || 400;
+    const fstopVal = parseFloat(camFstopSelect.value) || 8;
+    
+    const normLum = Math.max(1, avgBrightness) / 255;
+    const ev100 = Math.log2(normLum * 1000);
+
+    const seconds = (fstopVal * fstopVal) / (Math.pow(2, ev100) * (isoVal / 100));
+    
+    const nearest = nearestShutterLabel(seconds);
+    liveSpotShutterVal = nearest.v;
+    camShutterValEl.textContent = nearest.label;
+
+    renderCameraMatrixFullGrid(ev100, isoVal, fstopVal);
+  }
+
+  function startCameraSpotMetering() {
+    const ctx = meterCanvas.getContext('2d');
+    meterInterval = setInterval(() => {
+      if(!webcamFeed.videoWidth || isFrozen || isLoadedImageMode) return;
+      meterCanvas.width = 120;
+      meterCanvas.height = 120;
+      ctx.drawImage(webcamFeed, 0, 0, 120, 120);
+
+      const sampleX = Math.round(spotPos.x * 120);
+      const sampleY = Math.round(spotPos.y * 120);
+      const imgData = ctx.getImageData(Math.max(0, sampleX - 5), Math.max(0, sampleY - 5), 10, 10);
+
+      let sum = 0;
+      for(let i=0; i<imgData.data.length; i+=4) {
+        sum += 0.299 * imgData.data[i] + 0.587 * imgData.data[i+1] + 0.114 * imgData.data[i+2];
+      }
+      const avgBrightness = sum / (imgData.data.length / 4);
+      
+      const isoVal = parseFloat(camIsoSelect.value) || 400;
+      const fstopVal = parseFloat(camFstopSelect.value) || 8;
+      
+      const normLum = Math.max(1, avgBrightness) / 255;
+      const ev100 = Math.log2(normLum * 1000);
+
+      const seconds = (fstopVal * fstopVal) / (Math.pow(2, ev100) * (isoVal / 100));
+      
+      const nearest = nearestShutterLabel(seconds);
+      liveSpotShutterVal = nearest.v;
+      camShutterValEl.textContent = nearest.label;
+
+      renderCameraMatrixFullGrid(ev100, isoVal, fstopVal);
+    }, 150);
+  }
+
+  function handleAssign(selectedIdx) {
+    slots[selectedIdx].shutter = liveSpotShutterVal;
+    anchorSlotIndex = selectedIdx;
+    compute();
+  }
+
+  assignPointBtn.addEventListener('click', () => {
+    handleAssign(parseInt(targetPointSelect.value, 10) || 0);
+  });
+  matrixAssignBtn.addEventListener('click', () => {
+    handleAssign(parseInt(matrixTargetSelect.value, 10) || 0);
+  });
+
+  const zoneStrip = document.getElementById('zoneStrip');
+  const zoneNumbers = document.getElementById('zoneNumbers');
+  const rollersWrap = document.getElementById('rollersWrap');
+  const addPointBtn = document.getElementById('addPointBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const rangeReadout = document.getElementById('rangeReadout');
+  const rShutter = document.getElementById('rShutter');
+  const rFstopLcd = document.getElementById('rFstopLcd');
+  const rIsoLcd = document.getElementById('rIsoLcd');
+  const rSpanLine = document.getElementById('rSpanLine');
+  const pointCount = document.getElementById('pointCount');
+  const lvlDarkFill = document.getElementById('lvlDarkFill');
+  const lvlBrightFill = document.getElementById('lvlBrightFill');
+  const lvlDarkBadge = document.getElementById('lvlDarkBadge');
+  const lvlBrightBadge = document.getElementById('lvlBrightBadge');
+
+  function nearestShutterLabel(seconds){
+    let best = SHUTTERS[0], bestDiff = Infinity;
+    SHUTTERS.forEach(s=>{
+      const diff = Math.abs(Math.log2(s.v) - Math.log2(seconds));
+      if(diff < bestDiff){bestDiff = diff; best = s;}
+    });
+    return {label: best.label, v: best.v};
+  }
+
+  function renderZoneNumbers() {
+    zoneNumbers.innerHTML = '';
+    const anchorZoneVal = slots[anchorSlotIndex] ? slots[anchorSlotIndex].anchorZone : 3;
+
+    for(let i=0; i<=10; i++) {
+      const btn = document.createElement('div');
+      btn.className = 'zone-num-btn';
+      if(anchorZoneVal === i) btn.classList.add('active-target');
+      btn.textContent = i;
+      
+      btn.addEventListener('click', () => {
+        if(slots[anchorSlotIndex]) {
+          slots[anchorSlotIndex].anchorZone = i;
+          compute();
+        }
+      });
+      zoneNumbers.appendChild(btn);
+    }
+  }
+
+  function renderZoneStripTicks() {
+    zoneStrip.innerHTML = '<div class="zone-ticks"></div>';
+    const ticks = zoneStrip.querySelector('.zone-ticks');
+    for(let i=0;i<=10;i++){
+      const t = document.createElement('div');
+      t.className = 'zone-tick';
+      ticks.appendChild(t);
+    }
+  }
+
+  zoneStrip.addEventListener('click', (e) => {
+    if(e.target.closest('.zone-mark')) return;
+    const rect = zoneStrip.getBoundingClientRect();
+    const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+    const touchedZone = Math.round((x / rect.width) * 10);
+    
+    if(slots[anchorSlotIndex]) {
+      slots[anchorSlotIndex].anchorZone = touchedZone;
+      compute();
+    }
+  });
+
+  // REFINED 3-LINE TYPOGRAPHY FOOTER FOR ROLLER WHEELS
+  function renderRollers(calcZones) {
+    rollersWrap.innerHTML = slots.map((slot, idx) => {
+      const isAnchor = (idx === anchorSlotIndex);
+      const calculatedZ = calcZones && calcZones[idx] !== undefined ? calcZones[idx] : (slot.anchorZone || 5);
+
+      const itemsHtml = SHUTTERS.map(s => {
+        const isSel = Math.abs(s.v - slot.shutter) < 0.0001;
+        return `<div class="roller-item ${s.full ? 'is-full-stop' : ''} ${isSel ? 'selected' : ''}" onclick="window.selectRollerShutter(${idx}, ${s.v})">${s.label}</div>`;
+      }).join('');
+
+      return `
+        <div class="roller-column">
+          <div class="roller-wheel-body" id="rollerBody_${idx}" onclick="window.setAnchorSlot(${idx})">
+            ${itemsHtml}
+          </div>
+          <div class="roller-footer" onclick="window.setAnchorSlot(${idx})">
+            <div class="roller-title-primary">${slot.mainTitle}</div>
+            <div class="roller-title-sub">${slot.subTitle}</div>
+            <div class="roller-zone-badge">Zone ${calculatedZ.toFixed(1)}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    slots.forEach((s, idx) => {
+      const bodyEl = document.getElementById(`rollerBody_${idx}`);
+      if(bodyEl) {
+        const selEl = bodyEl.querySelector('.selected');
+        if(selEl) {
+          bodyEl.scrollTop = selEl.offsetTop - bodyEl.offsetHeight / 2 + selEl.offsetHeight / 2;
+        }
+      }
+    });
+  }
+
+  window.setAnchorSlot = function(idx) {
+    anchorSlotIndex = idx;
+    if(slots[idx].anchorZone === null) {
+      slots[idx].anchorZone = 5;
+    }
+    compute();
+  };
+
+  window.selectRollerShutter = function(idx, val) {
+    anchorSlotIndex = idx;
+    slots[idx].shutter = parseFloat(val);
+    compute();
+  };
+
+  addPointBtn.addEventListener('click', () => {
+    const count = slots.length + 1;
+    slots.push({
+      id: Date.now(),
+      mainTitle: `POINT ${count}`,
+      subTitle: `(POINT ${count})`,
+      shutter: 1/60,
+      anchorZone: null
+    });
+    populateTargetPointSelect();
+    compute();
+  });
+
+  resetBtn.addEventListener('click', () => {
+    slots = DEFAULT_SLOTS.map(s => ({...s}));
+    anchorSlotIndex = 0;
+    populateTargetPointSelect();
+    compute();
+  });
+
+  function compute() {
+    pointCount.textContent = slots.length + (slots.length === 1 ? ' POINT' : ' POINTS');
+    if(slots.length < 1) return;
+
+    const anchorSlot = slots[anchorSlotIndex] || slots[0];
+    const targetZ = anchorSlot.anchorZone !== null ? anchorSlot.anchorZone : 3;
+    const refSeconds = anchorSlot.shutter * Math.pow(2, targetZ - 5);
+
+    const calculatedZones = slots.map(s => 5 + Math.log2(refSeconds / s.shutter));
+
+    renderRollers(calculatedZones);
+    renderZoneNumbers();
+    populateTargetPointSelect();
+
+    zoneStrip.querySelectorAll('.zone-mark').forEach(m => m.remove());
+
+    slots.forEach((s, i) => {
+      const z = Math.max(0, Math.min(10, calculatedZones[i]));
+      const pct = (z/10)*100;
+      const nearest = nearestShutterLabel(s.shutter);
+
+      const mark = document.createElement('div');
+      mark.className = 'zone-mark';
+      if(i === anchorSlotIndex) mark.classList.add('active-slot');
+
+      mark.innerHTML = `<span class="tag">${nearest.label}</span><span class="pin"></span><span class="stem"></span>`;
+
+      if(pct < 8){ mark.style.left = '0%'; mark.style.transform = 'translateX(0%)'; }
+      else if(pct > 92){ mark.style.left = '100%'; mark.style.transform = 'translateX(-100%)'; }
+      else { mark.style.left = pct + '%'; mark.style.transform = 'translateX(-50%)'; }
+
+      mark.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        window.setAnchorSlot(i);
+      });
+
+      zoneStrip.appendChild(mark);
+    });
+
+    const minZ = Math.min(...calculatedZones);
+    const maxZ = Math.max(...calculatedZones);
+    const span = maxZ - minZ;
+    rangeReadout.textContent = span.toFixed(1) + (span === 1 ? ' STOP' : ' STOPS');
+
+    const darkPct = Math.max(0, Math.min(10, minZ)) * 10;
+    const brightPct = Math.max(0, Math.min(10, maxZ)) * 10;
+    lvlDarkFill.style.width = darkPct + '%';
+    lvlBrightFill.style.width = brightPct + '%';
+    lvlDarkBadge.textContent = 'Zone ' + (Math.round(minZ*10)/10).toFixed(1);
+    lvlBrightBadge.textContent = 'Zone ' + (Math.round(maxZ*10)/10).toFixed(1);
+
+    const nearestRef = nearestShutterLabel(refSeconds);
+    rShutter.textContent = nearestRef.label;
+    const fstopVal = parseFloat(document.getElementById('fstop').value) || 8;
+    const isoVal = document.getElementById('iso').value;
+    rFstopLcd.textContent = 'f/' + fstopVal;
+    rIsoLcd.textContent = 'ISO ' + isoVal;
+
+    let devLabel;
+    if(span > 6.3){ devLabel = 'N--'; }
+    else if(span > 5.3){ devLabel = 'N-'; }
+    else if(span < 3.8){ devLabel = 'N+'; }
+    else { devLabel = 'N (NORMAL)'; }
+
+    const outNote = (minZ < -0.05 || maxZ > 10.05) ? ' · OUT OF BOUNDS' : '';
+    if(!rSpanLine.classList.contains('highlight-sync')) {
+      rSpanLine.textContent = 'DYNAMIC RANGE — N · ' + span.toFixed(1) + ' STOPS' + outNote;
+    }
+  }
+
+  document.getElementById('iso').addEventListener('change', compute);
+  document.getElementById('fstop').addEventListener('change', compute);
+
+  renderZoneStripTicks();
+  compute();
+
+})();
+</script>
+</body>
+</html>
