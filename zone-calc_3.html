@@ -1840,10 +1840,24 @@
   }
 
   window.selectCameraMatrixPair = function(fstopVal, shutterSec) {
-    camFstopSelect.value = fstopVal;
-    document.getElementById('fstop').value = fstopVal;
+    // The <select> options are formatted like "4.0" — assigning a plain JS
+    // number (4) stringifies WITHOUT the trailing zero ("4") and silently
+    // fails to match any option, leaving the select stuck on its old value.
+    // This was the real reason the wrong card looked highlighted: whole-
+    // number apertures (2.0, 4.0, 8.0, 11.0, 16.0, 22.0) never actually
+    // applied at all, only the ones that already had a decimal (1.4, 2.8...).
+    const fstopStr = parseFloat(fstopVal).toFixed(1);
+    camFstopSelect.value = fstopStr;
+    document.getElementById('fstop').value = fstopStr;
     liveSpotShutterVal = shutterSec;
     compute();
+    // Refresh the matrix's "selected" highlight right now instead of
+    // waiting for the next periodic tick — otherwise the highlight can
+    // visibly lag a step behind the card you just tapped, while the
+    // shutter numbers (which refresh continuously either way) look like
+    // they've already moved on, making the highlight look broken.
+    if(isLoadedImageMode || isFrozen) sampleImageSpotMetering();
+    else sampleLiveFrame();
   };
 
   function sampleImageSpotMetering() {
