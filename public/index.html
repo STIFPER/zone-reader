@@ -1692,6 +1692,10 @@
 
     if(isLoadedImageMode || isFrozen) {
       sampleImageSpotMetering();
+    } else {
+      // Don't make the user wait up to 150ms for the next scheduled tick —
+      // read the new spot immediately so the reading feels instant.
+      sampleLiveFrame();
     }
   });
 
@@ -1802,19 +1806,37 @@
     }
   });
 
+  // Built ONCE per camera session and then only patched in place (text +
+  // selected class) on every meter tick — rebuilding the cards' innerHTML
+  // every 150ms was destroying and recreating the very element a finger was
+  // mid-tap on, which is what made tapping an aperture card feel unstable
+  // on phones (a touch typically spans 100-300ms, well within that window).
   function renderCameraMatrixFullGrid(ev100Val, isoVal, currFstop) {
-    camMatrixFullGrid.innerHTML = FULL_FSTOPS.map(f => {
+    let cards = camMatrixFullGrid.querySelectorAll('.cam-matrix-full-card');
+    if(cards.length !== FULL_FSTOPS.length) {
+      camMatrixFullGrid.innerHTML = FULL_FSTOPS.map(f => `
+        <div class="cam-matrix-full-card" data-fstop="${f}">
+          <div class="cam-matrix-full-fstop">f/${f.toFixed(1).replace('.0','')}</div>
+          <div class="cam-matrix-full-shutter"></div>
+        </div>
+      `).join('');
+      cards = camMatrixFullGrid.querySelectorAll('.cam-matrix-full-card');
+      cards.forEach((card) => {
+        card.addEventListener('click', () => {
+          window.selectCameraMatrixPair(parseFloat(card.dataset.fstop), parseFloat(card.dataset.shutterSec));
+        });
+      });
+    }
+
+    FULL_FSTOPS.forEach((f, i) => {
       const equivSec = (f * f / Math.pow(2, ev100Val)) * (100 / isoVal);
       const nearest = nearestShutterLabel(equivSec);
       const isSel = Math.abs(f - currFstop) < 0.05;
-
-      return `
-        <div class="cam-matrix-full-card ${isSel ? 'selected' : ''}" onclick="window.selectCameraMatrixPair(${f}, ${nearest.v})">
-          <div class="cam-matrix-full-fstop">f/${f.toFixed(1).replace('.0','')}</div>
-          <div class="cam-matrix-full-shutter">${nearest.label}</div>
-        </div>
-      `;
-    }).join('');
+      const card = cards[i];
+      card.dataset.shutterSec = nearest.v;
+      card.querySelector('.cam-matrix-full-shutter').textContent = nearest.label;
+      card.classList.toggle('selected', isSel);
+    });
   }
 
   window.selectCameraMatrixPair = function(fstopVal, shutterSec) {
@@ -1855,41 +1877,53 @@
     renderCameraMatrixFullGrid(ev100, parseFloat(auxMatrixIsoSelect.value) || isoVal, fstopVal);
   }
 
-  function startCameraSpotMetering() {
-    const ctx = meterCanvas.getContext('2d', { willReadFrequently: true });
-    meterInterval = setInterval(() => {
-      if(!webcamFeed.videoWidth || isFrozen || isLoadedImageMode) return;
-      meterCanvas.width = 120;
-      meterCanvas.height = 120;
-      ctx.drawImage(webcamFeed, 0, 0, 120, 120);
+  let liveMeterCtx = null;
+  // Pulled out of the interval so a reticle tap can trigger an immediate
+  // reading instead of waiting up to 150ms for the next scheduled tick —
+  // that wait was the actual source of the "delay" when picking a new spot.
+  function sampleLiveFrame() {
+    if(!webcamFeed.videoWidth || isFrozen || isLoadedImageMode) return;
+    if(!liveMeterCtx) liveMeterCtx = meterCanvas.getContext('2d', { willReadFrequently: true });
+    meterCanvas.width = 120;
+    meterCanvas.height = 120;
+    liveMeterCtx.drawImage(webcamFeed, 0, 0, 120, 120);
 
-      const sampleX = Math.round(spotPos.x * 120);
-      const sampleY = Math.round(spotPos.y * 120);
-      const imgData = ctx.getImageData(Math.max(0, sampleX - 5), Math.max(0, sampleY - 5), 10, 10);
+    const sampleX = Math.round(spotPos.x * 120);
+    const sampleY = Math.round(spotPos.y * 120);
+    const imgData = liveMeterCtx.getImageData(Math.max(0, sampleX - 5), Math.max(0, sampleY - 5), 10, 10);
 
-      let sum = 0;
-      for(let i=0; i<imgData.data.length; i+=4) {
-        sum += 0.299 * imgData.data[i] + 0.587 * imgData.data[i+1] + 0.114 * imgData.data[i+2];
-      }
-      const avgBrightness = sum / (imgData.data.length / 4);
-      
-      const isoVal = parseFloat(camIsoSelect.value) || 400;
-      const fstopVal = parseFloat(camFstopSelect.value) || 8;
-      
-      const normLum = Math.max(1, avgBrightness) / 255;
-      const ev100 = Math.log2(normLum * 1000);
+    let sum = 0;
+    for(let i=0; i<imgData.data.length; i+=4) {
+      sum += 0.299 * imgData.data[i] + 0.587 * imgData.data[i+1] + 0.114 * imgData.data[i+2];
+    }
+    const avgBrightness = sum / (imgData.data.length / 4);
 
-      const seconds = (fstopVal * fstopVal) / (Math.pow(2, ev100) * (isoVal / 100));
-      
-      const nearest = nearestShutterLabel(seconds);
-      liveSpotShutterVal = nearest.v;
-      camShutterValEl.textContent = nearest.label;
+    const isoVal = parseFloat(camIsoSelect.value) || 400;
+    const fstopVal = parseFloat(camFstopSelect.value) || 8;
 
-      // AUX FUNCTION: the matrix table uses its OWN independent ISO selector,
+    const normLum = Math.max(1, avgBrightness) / 255;
+    const ev100 = Math.log2(normLum * 1000);
+
+    const seconds = (fstopVal * fstopVal) / (Math.pow(2, ev100) * (isoVal / 100));
+
+    const nearest = nearestShutterLabel(seconds);
+    liveSpotShutterVal = nearest.v;
+    camShutterValEl.textContent = nearest.label;
+
+    // AUX FUNCTION: the matrix table uses its OWN independent ISO selector,
     // not the manual ISO above — so the manual assign/shutter workflow keeps
     // working exactly as before regardless of what this table is set to.
-    renderCameraMatrixFullGrid(ev100, parseFloat(auxMatrixIsoSelect.value) || isoVal, fstopVal);
-    }, 150);
+    // Skip the (fairly heavy) grid rebuild entirely when it isn't even
+    // visible — that was continuous per-tick DOM churn adding to the
+    // general sluggishness while the camera view is open.
+    if(activeCamViewMode === 'matrix') {
+      renderCameraMatrixFullGrid(ev100, parseFloat(auxMatrixIsoSelect.value) || isoVal, fstopVal);
+    }
+  }
+
+  function startCameraSpotMetering() {
+    sampleLiveFrame();
+    meterInterval = setInterval(sampleLiveFrame, 150);
   }
 
   function handleAssign(selectedIdx) {
