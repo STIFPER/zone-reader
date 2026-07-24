@@ -86,7 +86,7 @@
     display:flex;
     justify-content:flex-end;
     align-items:center;
-    margin-bottom:10px;
+    margin-top:12px;
     padding:0 4px;
     gap:8px;
     flex-wrap:wrap;
@@ -1102,15 +1102,6 @@
   <!-- Hidden File Input for Image Uploading -->
   <input type="file" id="imageFileInput" accept="image/*" style="display:none;">
 
-  <!-- Top Bar Controls -->
-  <div class="top-bar">
-    <div class="top-btn-group">
-      <button class="cam-toggle-btn" id="camToggleBtn" type="button">SPOT METER: CAMERA</button>
-      <button class="upload-btn-top" id="topUploadBtn" type="button">LOAD IMAGE</button>
-      <button class="theme-toggle-btn" id="themeToggleBtn" type="button">MODE: LIGHT / DARK</button>
-    </div>
-  </div>
-
   <div class="device">
     <!-- Corner Screws -->
     <div class="screw screw-tl"></div>
@@ -1293,6 +1284,15 @@
 
       </div>
 
+    </div>
+  </div>
+
+  <!-- Top Bar Controls (moved below the device shell) -->
+  <div class="top-bar">
+    <div class="top-btn-group">
+      <button class="cam-toggle-btn" id="camToggleBtn" type="button">SPOT METER: CAMERA</button>
+      <button class="upload-btn-top" id="topUploadBtn" type="button">LOAD IMAGE</button>
+      <button class="theme-toggle-btn" id="themeToggleBtn" type="button">MODE: LIGHT / DARK</button>
     </div>
   </div>
 
