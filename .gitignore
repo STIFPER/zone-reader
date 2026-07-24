@@ -2,6 +2,11 @@
 .firebase/
 .firebaserc
 
+# Node.js dependencies
+node_modules/
+package.json
+package-lock.json
+
 # OS generated files
 .DS_Store
 Thumbs.db
