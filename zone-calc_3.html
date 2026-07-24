@@ -2,7 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, shrink-to-fit=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Zone Reader">
 <title>Zone Reader — Precision Analog & Live Camera Exposure System</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700;800&display=swap" rel="stylesheet">
@@ -52,7 +56,9 @@
   }
 
   *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;}
+  /* touch-action: pan-x pan-y — ปิดการซูมด้วยการบีบนิ้ว (pinch) ที่ระดับเบราว์เซอร์ แต่ยังปัด/สกอลได้ปกติ
+     ให้ความรู้สึกเหมือนแอปจริง (ดูสคริปต์กัน gesture/double-tap เพิ่มเติมท้ายไฟล์) */
+  html,body{margin:0;padding:0;touch-action:pan-x pan-y;overscroll-behavior-y:contain;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
   body{
     background:
       radial-gradient(ellipse 100% 50% at 50% 0%, rgba(255,255,255,0.08) 0%, transparent 70%),
@@ -1189,6 +1195,21 @@
 
 <script>
 (function(){
+  // HARD-DISABLE PINCH/DOUBLE-TAP ZOOM (iOS Safari ignores the viewport
+  // "user-scalable=no" hint for gestures, so it must be blocked in JS too)
+  document.addEventListener('gesturestart', (e) => e.preventDefault());
+  document.addEventListener('gesturechange', (e) => e.preventDefault());
+  document.addEventListener('gestureend', (e) => e.preventDefault());
+  document.addEventListener('touchmove', (e) => {
+    if(e.touches.length > 1) e.preventDefault();
+  }, { passive:false });
+  let lastTouchEnd = 0;
+  document.addEventListener('touchend', (e) => {
+    const now = Date.now();
+    if(now - lastTouchEnd <= 300) e.preventDefault();
+    lastTouchEnd = now;
+  }, { passive:false });
+
   // FULL DETAILED 1/3-STOP SHUTTER SPEED INCREMENTS
   const SHUTTERS = [
     {label:"1/8000", v:1/8000, full:true},  {label:"1/6400", v:1/6400, full:false}, {label:"1/5000", v:1/5000, full:false},
@@ -1315,7 +1336,7 @@
 
         snapshotCanvas.width = img.width;
         snapshotCanvas.height = img.height;
-        const sCtx = snapshotCanvas.getContext('2d');
+        const sCtx = snapshotCanvas.getContext('2d', { willReadFrequently: true });
         sCtx.drawImage(img, 0, 0);
         snapshotCanvas.style.display = 'block';
 
@@ -1365,11 +1386,11 @@
     if(!sourceCanvas || !sourceCanvas.width) {
       meterCanvas.width = 160;
       meterCanvas.height = 160;
-      sCtx = meterCanvas.getContext('2d');
+      sCtx = meterCanvas.getContext('2d', { willReadFrequently: true });
       sCtx.drawImage(webcamFeed, 0, 0, 160, 160);
       sourceCanvas = meterCanvas;
     } else {
-      sCtx = sourceCanvas.getContext('2d');
+      sCtx = sourceCanvas.getContext('2d', { willReadFrequently: true });
     }
 
     // 2. Sample 400 points across image frame
@@ -1448,7 +1469,7 @@
     if(isFrozen) {
       snapshotCanvas.width = webcamFeed.videoWidth || 640;
       snapshotCanvas.height = webcamFeed.videoHeight || 480;
-      const sCtx = snapshotCanvas.getContext('2d');
+      const sCtx = snapshotCanvas.getContext('2d', { willReadFrequently: true });
       sCtx.drawImage(webcamFeed, 0, 0, snapshotCanvas.width, snapshotCanvas.height);
       snapshotCanvas.style.display = 'block';
       captureBtn.textContent = 'RESUME';
@@ -1478,26 +1499,81 @@
     }
   });
 
-  camToggleBtn.addEventListener('click', async () => {
-    const isOpen = cameraViewPanel.classList.contains('open');
-    if(!isOpen) {
+  function showCamToast(msg, duration) {
+    camHudToast.textContent = msg;
+    camHudToast.style.display = 'block';
+    setTimeout(() => { camHudToast.style.display = 'none'; }, duration || 2200);
+  }
+
+  // Best-effort lock to continuous AF/AE/AWB so the metered brightness doesn't
+  // hunt/flicker mid-reading on phones that expose these MediaTrack constraints.
+  async function applyStableTrackConstraints(track) {
+    if(!track || !track.getCapabilities) return;
+    try {
+      const caps = track.getCapabilities();
+      const advanced = [];
+      if(caps.focusMode && caps.focusMode.includes('continuous')) advanced.push({ focusMode: 'continuous' });
+      if(caps.exposureMode && caps.exposureMode.includes('continuous')) advanced.push({ exposureMode: 'continuous' });
+      if(caps.whiteBalanceMode && caps.whiteBalanceMode.includes('continuous')) advanced.push({ whiteBalanceMode: 'continuous' });
+      if(advanced.length) await track.applyConstraints({ advanced });
+    } catch(e) { /* not fatal — some browsers reject unsupported advanced constraints */ }
+  }
+
+  async function requestCameraStream() {
+    // Cap the requested resolution: metering only ever samples a downscaled
+    // 120px frame, so asking for the phone's full sensor res (often 4K+) just
+    // adds decode/scale latency on every draw — this is the main source of
+    // the "laggy" feel on mobile browsers.
+    const constraintAttempts = [
+      { video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } } },
+      { video: { facingMode: { ideal: 'environment' } } },
+      { video: true }
+    ];
+    let lastErr = null;
+    for(const constraints of constraintAttempts) {
       try {
-        mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-        webcamFeed.srcObject = mediaStream;
-        cameraViewPanel.classList.add('open');
-        camToggleBtn.classList.add('active');
-        setCamViewMode('matrix');
-        populateTargetPointSelect();
-        startCameraSpotMetering();
+        return await navigator.mediaDevices.getUserMedia(constraints);
       } catch(err) {
-        // Subtle in-app toast if camera is blocked
-        camHudToast.textContent = 'CAMERA ACCESS UNAVAILABLE';
-        camHudToast.style.display = 'block';
-        setTimeout(() => { camHudToast.style.display = 'none'; }, 2000);
+        lastErr = err;
+        if(err.name === 'NotAllowedError' || err.name === 'NotFoundError') break;
       }
-    } else {
-      stopCameraStream();
     }
+    throw lastErr;
+  }
+
+  async function openCameraStream() {
+    try {
+      mediaStream = await requestCameraStream();
+      webcamFeed.srcObject = mediaStream;
+
+      // Some mobile browsers need an explicit play() after assigning
+      // srcObject dynamically — the autoplay attribute alone can silently
+      // stall the feed on a black frame.
+      try { await webcamFeed.play(); } catch(e) { /* ignored — playsinline+muted covers autoplay policy */ }
+
+      await applyStableTrackConstraints(mediaStream.getVideoTracks()[0]);
+
+      cameraViewPanel.classList.add('open');
+      camToggleBtn.classList.add('active');
+      setCamViewMode('matrix');
+      populateTargetPointSelect();
+
+      const beginMetering = () => startCameraSpotMetering();
+      if(webcamFeed.readyState >= 2) beginMetering();
+      else webcamFeed.addEventListener('loadeddata', beginMetering, { once: true });
+    } catch(err) {
+      let msg = 'CAMERA ACCESS UNAVAILABLE';
+      if(err && err.name === 'NotAllowedError') msg = 'CAMERA PERMISSION DENIED — CHECK BROWSER SETTINGS';
+      else if(err && err.name === 'NotFoundError') msg = 'NO CAMERA FOUND ON THIS DEVICE';
+      else if(err && err.name === 'NotReadableError') msg = 'CAMERA IN USE BY ANOTHER APP';
+      showCamToast(msg, 3000);
+    }
+  }
+
+  camToggleBtn.addEventListener('click', () => {
+    const isOpen = cameraViewPanel.classList.contains('open');
+    if(!isOpen) openCameraStream();
+    else stopCameraStream();
   });
 
   function stopCameraStream() {
@@ -1506,10 +1582,29 @@
       mediaStream = null;
     }
     if(meterInterval) clearInterval(meterInterval);
+    meterInterval = null;
     cameraViewPanel.classList.remove('open');
     camToggleBtn.classList.remove('active');
     if(isFrozen || isLoadedImageMode) toggleFreeze();
   }
+
+  // Mobile browsers (esp. iOS Safari) frequently kill the camera track when
+  // the tab/app is backgrounded. Detect that on return and recover instead of
+  // leaving a frozen/black viewfinder that looks broken.
+  document.addEventListener('visibilitychange', () => {
+    if(document.hidden) {
+      if(meterInterval) { clearInterval(meterInterval); meterInterval = null; }
+      return;
+    }
+    const isOpen = cameraViewPanel.classList.contains('open');
+    if(!isOpen || isFrozen || isLoadedImageMode) return;
+    const track = mediaStream && mediaStream.getVideoTracks()[0];
+    if(!track || track.readyState === 'ended') {
+      openCameraStream();
+    } else if(!meterInterval) {
+      startCameraSpotMetering();
+    }
+  });
 
   function renderCameraMatrixFullGrid(ev100Val, isoVal, currFstop) {
     camMatrixFullGrid.innerHTML = FULL_FSTOPS.map(f => {
@@ -1535,7 +1630,7 @@
 
   function sampleImageSpotMetering() {
     if(!snapshotCanvas.width) return;
-    const sCtx = snapshotCanvas.getContext('2d');
+    const sCtx = snapshotCanvas.getContext('2d', { willReadFrequently: true });
     const sampleX = Math.round(spotPos.x * snapshotCanvas.width);
     const sampleY = Math.round(spotPos.y * snapshotCanvas.height);
 
@@ -1562,7 +1657,7 @@
   }
 
   function startCameraSpotMetering() {
-    const ctx = meterCanvas.getContext('2d');
+    const ctx = meterCanvas.getContext('2d', { willReadFrequently: true });
     meterInterval = setInterval(() => {
       if(!webcamFeed.videoWidth || isFrozen || isLoadedImageMode) return;
       meterCanvas.width = 120;

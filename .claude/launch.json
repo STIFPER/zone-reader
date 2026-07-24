@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "zone-reader",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["--yes", "http-server", "public", "-p", "8532", "-c-1"],
+      "port": 8532
+    }
+  ]
+}
