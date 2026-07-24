@@ -796,6 +796,19 @@
     box-shadow:0 0 0 2px #FFF, 0 0 0 4px #1C1A17;
     transform:scale(1.1);
   }
+  .zone-mark.is-overall .pin {
+    background: var(--accent-glow) !important;
+  }
+  .zone-mark.is-overall .stem {
+    background: var(--accent-glow) !important;
+  }
+  .zone-mark.is-overall .tag {
+    background: var(--accent-glow) !important;
+    border-color: var(--accent-glow) !important;
+  }
+  .zone-mark.is-overall.active-slot .pin {
+    box-shadow: 0 0 0 2px #FFF, 0 0 0 4px var(--accent-glow);
+  }
   .zone-mark .pin{
     width:11px;height:11px;border-radius:50%;
     background:#1C1A17;
@@ -1855,6 +1868,7 @@
       const mark = document.createElement('div');
       mark.className = 'zone-mark';
       if(i === anchorSlotIndex) mark.classList.add('active-slot');
+      if(s.subTitle === '(OVERALL)') mark.classList.add('is-overall');
 
       mark.innerHTML = `<span class="tag">${nearest.label}</span><span class="pin"></span><span class="stem"></span>`;
 
