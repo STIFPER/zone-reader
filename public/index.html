@@ -366,6 +366,23 @@
     flex-wrap: wrap;
     gap: 6px;
   }
+  .cam-matrix-title-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  /* .capture-btn's default look (light panel bg) is meant for the compact
+     bottom bar; restyle it to match the dark matrix panel it sits in here */
+  #matrixCaptureBtn {
+    background: rgba(255,255,255,0.1);
+    color: #FFFFFF;
+    border-color: rgba(255,255,255,0.25);
+  }
+  #matrixCaptureBtn.frozen {
+    background: #E53935;
+    border-color: #E53935;
+  }
 
   /* AUX FUNCTION: independent ISO just for the exposure-pairs matrix table */
   .cam-aux-iso-row {
@@ -1167,7 +1184,10 @@
           <div class="cam-matrix-full-panel" id="viewModeMatrixPanel">
             <div class="cam-matrix-full-title">
               <span>EXPOSURE PAIRS MATRIX</span>
-              <button class="auto-meter-all-btn" id="matrixAutoMeterBtn" type="button">AUTO-METER ALL ZONES</button>
+              <div class="cam-matrix-title-actions">
+                <button class="capture-btn" id="matrixCaptureBtn" type="button">FREEZE</button>
+                <button class="auto-meter-all-btn" id="matrixAutoMeterBtn" type="button">AUTO-METER ALL ZONES</button>
+              </div>
             </div>
             <!-- AUX FUNCTION: pick an ISO here (independent of the main ISO
                  selector above) and this table recalculates every possible
@@ -1443,6 +1463,7 @@
   const spotReticle = document.getElementById('spotReticle');
   const camShutterValEl = document.getElementById('camShutterVal');
   const captureBtn = document.getElementById('captureBtn');
+  const matrixCaptureBtn = document.getElementById('matrixCaptureBtn');
   const matrixAutoMeterBtn = document.getElementById('matrixAutoMeterBtn');
   const barAutoMeterBtn = document.getElementById('barAutoMeterBtn');
   const camFstopSelect = document.getElementById('camFstopSelect');
@@ -1490,8 +1511,7 @@
 
         isFrozen = true;
         isLoadedImageMode = true;
-        captureBtn.textContent = 'RESUME LIVE';
-        captureBtn.classList.add('frozen');
+        setCaptureBtnState('RESUME LIVE', true);
 
         updateReticleVisualPosition();
         sampleImageSpotMetering();
@@ -1609,16 +1629,26 @@
     }, 2800);
   }
 
-  // Freeze / Unfreeze Camera Snapshot
+  // Freeze / Unfreeze Camera Snapshot — mirrored on both the COMPACT bar's
+  // button and the MATRIX view's own button so freezing/resuming works no
+  // matter which view mode you're in, without needing to switch to COMPACT.
+  function setCaptureBtnState(text, frozen) {
+    [captureBtn, matrixCaptureBtn].forEach(btn => {
+      if(!btn) return;
+      btn.textContent = text;
+      btn.classList.toggle('frozen', frozen);
+    });
+  }
+
   captureBtn.addEventListener('click', toggleFreeze);
+  matrixCaptureBtn.addEventListener('click', toggleFreeze);
   camCloseBtn.addEventListener('click', stopCameraStream);
 
   function toggleFreeze() {
     if(isLoadedImageMode) {
       isLoadedImageMode = false;
       snapshotCanvas.style.display = 'none';
-      captureBtn.textContent = 'FREEZE';
-      captureBtn.classList.remove('frozen');
+      setCaptureBtnState('FREEZE', false);
       isFrozen = false;
       return;
     }
@@ -1629,12 +1659,10 @@
       const sCtx = snapshotCanvas.getContext('2d', { willReadFrequently: true });
       sCtx.drawImage(webcamFeed, 0, 0, snapshotCanvas.width, snapshotCanvas.height);
       snapshotCanvas.style.display = 'block';
-      captureBtn.textContent = 'RESUME';
-      captureBtn.classList.add('frozen');
+      setCaptureBtnState('RESUME', true);
     } else {
       snapshotCanvas.style.display = 'none';
-      captureBtn.textContent = 'FREEZE';
-      captureBtn.classList.remove('frozen');
+      setCaptureBtnState('FREEZE', false);
     }
   }
 
