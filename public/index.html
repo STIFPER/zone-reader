@@ -960,6 +960,43 @@
     margin-top:2px;
   }
 
+  /* PER-POINT ISO/APERTURE QUICK EDITORS — lets every metering point carry
+     its own exposure setting instead of one shared globally */
+  .roller-quick-settings {
+    display:flex;
+    gap:5px;
+    margin-top:3px;
+  }
+  .roller-mini-field {
+    display:flex;
+    align-items:center;
+    gap:3px;
+    background: var(--panel-white);
+    border:1px solid var(--border-line);
+    border-radius:5px;
+    padding:1px 5px;
+    box-shadow: var(--shadow-btn);
+  }
+  .roller-mini-label {
+    font-family:'Satoshi', sans-serif;
+    font-size:8px;
+    font-weight:700;
+    letter-spacing:.06em;
+    color:var(--ink-sub);
+    text-transform:uppercase;
+  }
+  .roller-mini-select {
+    background:transparent;
+    border:none;
+    color:var(--ink-main);
+    font-family:'JetBrains Mono', monospace;
+    font-size:9.5px;
+    font-weight:700;
+    padding:1px 0;
+    max-width:52px;
+    cursor:pointer;
+  }
+
   /* Single Bottom Action Bar */
   .action-bar {
     display:flex;
@@ -1242,10 +1279,23 @@
 
   const FULL_FSTOPS = [1.0, 1.4, 2.0, 2.8, 4.0, 5.6, 8.0, 11.0, 16.0, 22.0, 32.0];
 
+  // Per-point ISO / Aperture option lists — same values as the main ISO/Aperture
+  // selectors, reused so every metering point can carry its own exposure setting
+  // instead of sharing one global ISO/f-stop across all points.
+  const ISO_VALUES = [6,8,10,12,16,20,25,32,40,50,64,80,100,125,160,200,250,320,400,500,640,800,1000,1250,1600,2000,2500,3200,4000,5000,6400,8000,10000,12800,25600,51200,102400];
+  const FSTOP_VALUES = [1.0,1.1,1.2,1.4,1.6,1.8,2.0,2.2,2.5,2.8,3.2,3.5,4.0,4.5,5.0,5.6,6.3,7.1,8.0,9.0,10.0,11.0,13.0,14.0,16.0,18.0,20.0,22.0,25.0,29.0,32.0];
+
+  function buildIsoOptions(selected) {
+    return ISO_VALUES.map(v => `<option value="${v}" ${Math.abs(v - selected) < 0.01 ? 'selected' : ''}>${v}</option>`).join('');
+  }
+  function buildFstopOptions(selected) {
+    return FSTOP_VALUES.map(v => `<option value="${v}" ${Math.abs(v - selected) < 0.01 ? 'selected' : ''}>${v.toFixed(1)}</option>`).join('');
+  }
+
   const DEFAULT_SLOTS = [
-    { id: 1, mainTitle: "POINT 1", subTitle: "(SHADOW)", shutter: 1/4, anchorZone: 3 },
-    { id: 2, mainTitle: "POINT 2", subTitle: "(MIDTONE)", shutter: 1/30, anchorZone: null },
-    { id: 3, mainTitle: "POINT 3", subTitle: "(HIGHLIGHT)", shutter: 1/125, anchorZone: null }
+    { id: 1, mainTitle: "POINT 1", subTitle: "(SHADOW)", shutter: 1/4, anchorZone: 3, iso: 400, fstop: 8.0 },
+    { id: 2, mainTitle: "POINT 2", subTitle: "(MIDTONE)", shutter: 1/30, anchorZone: null, iso: 400, fstop: 8.0 },
+    { id: 3, mainTitle: "POINT 3", subTitle: "(HIGHLIGHT)", shutter: 1/125, anchorZone: null, iso: 400, fstop: 8.0 }
   ];
 
   let slots = DEFAULT_SLOTS.map(s => ({...s}));
@@ -1359,12 +1409,17 @@
     reader.readAsDataURL(file);
   });
 
-  // Sync main ISO and Aperture selectors with camera overlay selectors
+  // Main ISO/Aperture selectors act as a quick editor for whichever point is
+  // currently the anchor, and stay mirrored into the camera overlay selectors.
   document.getElementById('iso').addEventListener('change', (e) => {
     camIsoSelect.value = e.target.value;
+    const anchorSlot = slots[anchorSlotIndex];
+    if(anchorSlot) anchorSlot.iso = parseFloat(e.target.value) || anchorSlot.iso;
   });
   document.getElementById('fstop').addEventListener('change', (e) => {
     camFstopSelect.value = e.target.value;
+    const anchorSlot = slots[anchorSlotIndex];
+    if(anchorSlot) anchorSlot.fstop = parseFloat(e.target.value) || anchorSlot.fstop;
   });
   camIsoSelect.addEventListener('change', (e) => {
     document.getElementById('iso').value = e.target.value;
@@ -1431,10 +1486,11 @@
       return nearestShutterLabel(seconds).v;
     }
 
-    // 4. Directly SYNC into all 3 Zone System slots!
-    if(slots.length >= 1) slots[0].shutter = lumToShutter(shadowLum);
-    if(slots.length >= 2) slots[1].shutter = lumToShutter(midtoneLum);
-    if(slots.length >= 3) slots[2].shutter = lumToShutter(highlightLum);
+    // 4. Directly SYNC into all 3 Zone System slots! (record the ISO/f-stop the
+    // reading was taken at too, since each point can now carry its own setting)
+    if(slots.length >= 1) { slots[0].shutter = lumToShutter(shadowLum); slots[0].iso = isoVal; slots[0].fstop = fstopVal; }
+    if(slots.length >= 2) { slots[1].shutter = lumToShutter(midtoneLum); slots[1].iso = isoVal; slots[1].fstop = fstopVal; }
+    if(slots.length >= 3) { slots[2].shutter = lumToShutter(highlightLum); slots[2].iso = isoVal; slots[2].fstop = fstopVal; }
 
     anchorSlotIndex = 0;
     compute();
@@ -1699,6 +1755,10 @@
 
   function handleAssign(selectedIdx) {
     slots[selectedIdx].shutter = liveSpotShutterVal;
+    // Record the ISO/f-stop this reading was taken at, since each point can
+    // now carry its own exposure setting instead of one shared globally.
+    slots[selectedIdx].iso = parseFloat(camIsoSelect.value) || slots[selectedIdx].iso;
+    slots[selectedIdx].fstop = parseFloat(camFstopSelect.value) || slots[selectedIdx].fstop;
     anchorSlotIndex = selectedIdx;
     compute();
   }
@@ -1796,6 +1856,16 @@
           <div class="roller-footer" onclick="window.setAnchorSlot(${idx})">
             <div class="roller-title-primary">${slot.mainTitle}</div>
             <div class="roller-title-sub">${slot.subTitle}</div>
+            <div class="roller-quick-settings" onclick="event.stopPropagation()">
+              <label class="roller-mini-field">
+                <span class="roller-mini-label">ISO</span>
+                <select class="roller-mini-select" onchange="window.setSlotIso(${idx}, this.value)">${buildIsoOptions(slot.iso)}</select>
+              </label>
+              <label class="roller-mini-field">
+                <span class="roller-mini-label">f/</span>
+                <select class="roller-mini-select" onchange="window.setSlotFstop(${idx}, this.value)">${buildFstopOptions(slot.fstop)}</select>
+              </label>
+            </div>
             <div class="roller-zone-badge">Zone ${calculatedZ.toFixed(1)}</div>
           </div>
         </div>
@@ -1821,6 +1891,20 @@
     compute();
   };
 
+  // Let each metering point carry its own ISO/Aperture instead of one shared
+  // globally — e.g. readings taken at different camera settings still line up
+  // correctly on the zone strip.
+  window.setSlotIso = function(idx, val) {
+    if(!slots[idx]) return;
+    slots[idx].iso = parseFloat(val) || slots[idx].iso;
+    compute();
+  };
+  window.setSlotFstop = function(idx, val) {
+    if(!slots[idx]) return;
+    slots[idx].fstop = parseFloat(val) || slots[idx].fstop;
+    compute();
+  };
+
   window.selectRollerShutter = function(idx, val) {
     anchorSlotIndex = idx;
     slots[idx].shutter = parseFloat(val);
@@ -1834,7 +1918,9 @@
       mainTitle: `POINT ${count}`,
       subTitle: `(POINT ${count})`,
       shutter: 1/60,
-      anchorZone: null
+      anchorZone: null,
+      iso: parseFloat(document.getElementById('iso').value) || 400,
+      fstop: parseFloat(document.getElementById('fstop').value) || 8.0
     });
     populateTargetPointSelect();
     compute();
@@ -1855,7 +1941,21 @@
     const targetZ = anchorSlot.anchorZone !== null ? anchorSlot.anchorZone : 3;
     const refSeconds = anchorSlot.shutter * Math.pow(2, targetZ - 5);
 
-    const calculatedZones = slots.map(s => 5 + Math.log2(refSeconds / s.shutter));
+    // Keep the main ISO/Aperture selectors showing whichever point is anchored.
+    const isoSelectEl = document.getElementById('iso');
+    const fstopSelectEl = document.getElementById('fstop');
+    if(isoSelectEl && parseFloat(isoSelectEl.value) !== anchorSlot.iso) isoSelectEl.value = anchorSlot.iso;
+    if(fstopSelectEl && parseFloat(fstopSelectEl.value) !== anchorSlot.fstop) fstopSelectEl.value = anchorSlot.fstop.toFixed(1);
+
+    // Exposure value (in stops) for a point, folding in ITS OWN ISO/aperture —
+    // not just its shutter — so points metered at different camera settings
+    // still land on the correct relative zone. When every point shares the
+    // same ISO/f-stop this reduces to the old pure-shutter-ratio comparison.
+    function evOf(s) {
+      return Math.log2((s.fstop * s.fstop) / s.shutter) - Math.log2(s.iso / 100);
+    }
+    const anchorEV = evOf(anchorSlot);
+    const calculatedZones = slots.map(s => targetZ + (evOf(s) - anchorEV));
 
     renderRollers(calculatedZones);
     renderZoneNumbers();
@@ -1900,10 +2000,10 @@
 
     const nearestRef = nearestShutterLabel(refSeconds);
     rShutter.textContent = nearestRef.label;
-    const fstopVal = parseFloat(document.getElementById('fstop').value) || 8;
-    const isoVal = document.getElementById('iso').value;
-    rFstopLcd.textContent = 'f/' + fstopVal;
-    rIsoLcd.textContent = 'ISO ' + isoVal;
+    // Reflect the ANCHOR point's own ISO/f-stop — it may now differ from the
+    // global selector if it was set per-point or read from the camera meter.
+    rFstopLcd.textContent = 'f/' + anchorSlot.fstop.toFixed(1);
+    rIsoLcd.textContent = 'ISO ' + anchorSlot.iso;
 
     let devLabel;
     if(span > 6.3){ devLabel = 'N--'; }
