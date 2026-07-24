@@ -360,6 +360,19 @@
     flex-wrap: wrap;
     gap: 6px;
   }
+
+  /* AUX FUNCTION: independent ISO just for the exposure-pairs matrix table */
+  .cam-aux-iso-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px dashed rgba(255,255,255,0.15);
+  }
+  .cam-aux-iso-select {
+    width: auto;
+  }
   .cam-matrix-full-grid {
     display: flex;
     gap: 6px;
@@ -1150,6 +1163,16 @@
               <span>EXPOSURE PAIRS MATRIX</span>
               <button class="auto-meter-all-btn" id="matrixAutoMeterBtn" type="button">AUTO-METER ALL ZONES</button>
             </div>
+            <!-- AUX FUNCTION: pick an ISO here (independent of the main ISO
+                 selector above) and this table recalculates every possible
+                 aperture/shutter pair for that ISO from the live meter reading -->
+            <div class="cam-aux-iso-row">
+              <span class="cam-meter-label">AUX ISO (independent)</span>
+              <select class="cam-meter-select cam-aux-iso-select" id="auxMatrixIsoSelect">
+                <option>50</option><option>100</option><option>200</option>
+                <option selected>400</option><option>800</option><option>1600</option><option>3200</option>
+              </select>
+            </div>
             <div class="cam-matrix-full-grid" id="camMatrixFullGrid">
               <!-- Dynamically populated horizontal exposure pair cards -->
             </div>
@@ -1406,6 +1429,7 @@
   const barAutoMeterBtn = document.getElementById('barAutoMeterBtn');
   const camFstopSelect = document.getElementById('camFstopSelect');
   const camIsoSelect = document.getElementById('camIsoSelect');
+  const auxMatrixIsoSelect = document.getElementById('auxMatrixIsoSelect');
   const targetPointSelect = document.getElementById('targetPointSelect');
   const matrixTargetSelect = document.getElementById('matrixTargetSelect');
   const assignPointBtn = document.getElementById('assignPointBtn');
@@ -1474,6 +1498,14 @@
     document.getElementById('fstop').value = e.target.value;
     if(isLoadedImageMode) sampleImageSpotMetering();
     else compute();
+  });
+
+  // AUX FUNCTION: changing the matrix's independent ISO doesn't touch the
+  // manual ISO/aperture at all — just refreshes the aperture/shutter table.
+  // Live camera mode already refreshes every 150ms on its own; frozen/loaded-
+  // image mode needs an explicit re-sample since that only runs on demand.
+  auxMatrixIsoSelect.addEventListener('change', () => {
+    if(isFrozen || isLoadedImageMode) sampleImageSpotMetering();
   });
 
   // SINGLE-TAP SEAMLESS AUTO-METER & SYSTEM SYNC (NO BROWSER POPUPS!)
@@ -1759,7 +1791,10 @@
     liveSpotShutterVal = nearest.v;
     camShutterValEl.textContent = nearest.label;
 
-    renderCameraMatrixFullGrid(ev100, isoVal, fstopVal);
+    // AUX FUNCTION: the matrix table uses its OWN independent ISO selector,
+    // not the manual ISO above — so the manual assign/shutter workflow keeps
+    // working exactly as before regardless of what this table is set to.
+    renderCameraMatrixFullGrid(ev100, parseFloat(auxMatrixIsoSelect.value) || isoVal, fstopVal);
   }
 
   function startCameraSpotMetering() {
@@ -1792,7 +1827,10 @@
       liveSpotShutterVal = nearest.v;
       camShutterValEl.textContent = nearest.label;
 
-      renderCameraMatrixFullGrid(ev100, isoVal, fstopVal);
+      // AUX FUNCTION: the matrix table uses its OWN independent ISO selector,
+    // not the manual ISO above — so the manual assign/shutter workflow keeps
+    // working exactly as before regardless of what this table is set to.
+    renderCameraMatrixFullGrid(ev100, parseFloat(auxMatrixIsoSelect.value) || isoVal, fstopVal);
     }, 150);
   }
 
