@@ -2,19 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, shrink-to-fit=no">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Zone Reader">
-<meta name="theme-color" content="#0A0B0C">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Zone Reader — Precision Analog & Live Camera Exposure System</title>
-
-<!-- APP ICON: HOME-SCREEN BOOKMARK / PWA INSTALL -->
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
-<link rel="icon" type="image/png" sizes="16x16" href="icons/icon-16.png">
-<link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700;800&display=swap" rel="stylesheet">
 <!-- FONTSHARE SATOSHI PRIMARY TYPOGRAPHY -->
@@ -63,9 +52,7 @@
   }
 
   *{box-sizing:border-box;}
-  /* touch-action: pan-x pan-y — ปิดการซูมด้วยการบีบนิ้ว (pinch) ที่ระดับเบราว์เซอร์ แต่ยังปัด/สกอลได้ปกติ
-     ให้ความรู้สึกเหมือนแอปจริง (ดูสคริปต์กัน gesture/double-tap เพิ่มเติมท้ายไฟล์) */
-  html,body{margin:0;padding:0;touch-action:pan-x pan-y;overscroll-behavior-y:contain;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
+  html,body{margin:0;padding:0;}
   body{
     background:
       radial-gradient(ellipse 100% 50% at 50% 0%, rgba(255,255,255,0.08) 0%, transparent 70%),
@@ -101,6 +88,7 @@
   .top-btn-group {
     display:flex;
     gap:6px;
+    flex-wrap:wrap;
   }
   .theme-toggle-btn, .cam-toggle-btn, .upload-btn-top {
     background: var(--panel-white);
@@ -168,6 +156,8 @@
     box-shadow: inset 0 0 24px rgba(0,0,0,0.9), 0 10px 24px rgba(0,0,0,0.4);
     margin-bottom:14px;
     cursor:crosshair;
+    width:100%;
+    max-width:100%;
   }
   .camera-view-panel.open {
     display:block;
@@ -199,10 +189,11 @@
     justify-content:space-between;
     align-items:center;
     z-index: 5;
+    gap:6px;
   }
   .cam-hud-left {
     display: flex;
-    gap: 8px;
+    gap: 6px;
     align-items: center;
   }
   
@@ -352,6 +343,8 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
   }
   .cam-matrix-full-grid {
     display: flex;
@@ -403,6 +396,7 @@
     gap: 6px;
     margin-top: 6px;
     align-items: center;
+    flex-wrap: wrap;
   }
 
   /* VIEW MODE 2: COMPACT METER CONTROL BAR */
@@ -424,12 +418,14 @@
     display: flex;
     gap: 8px;
     align-items: center;
+    flex-wrap: wrap;
   }
   .cam-meter-field {
     flex: 1;
     display: flex;
     flex-direction: column;
     gap: 2px;
+    min-width: 60px;
   }
   .cam-meter-label {
     font-family: 'Satoshi', sans-serif;
@@ -508,6 +504,7 @@
     font-size: 11px;
     font-weight: 600;
     cursor: pointer;
+    min-width: 120px;
   }
   .assign-btn {
     background: var(--accent-glow);
@@ -602,6 +599,7 @@
     font-weight:500;
     display:flex;
     gap:10px;
+    flex-wrap: wrap;
   }
   .readout-subline span.val { color:#FFFFFF !important; font-family:'JetBrains Mono', monospace; font-weight:600; }
 
@@ -776,6 +774,7 @@
     background: var(--panel-white);
     box-shadow: var(--shadow-btn);
     border:1px solid var(--border-line);
+    min-width: 0;
   }
   .zone-num-btn.active-target {
     background: #1C1A17 !important;
@@ -832,6 +831,7 @@
     flex-direction:column;
     align-items:center;
     gap:8px;
+    min-width: 0;
   }
 
   .roller-wheel-body {
@@ -960,43 +960,6 @@
     margin-top:2px;
   }
 
-  /* PER-POINT ISO/APERTURE QUICK EDITORS — lets every metering point carry
-     its own exposure setting instead of one shared globally */
-  .roller-quick-settings {
-    display:flex;
-    gap:5px;
-    margin-top:3px;
-  }
-  .roller-mini-field {
-    display:flex;
-    align-items:center;
-    gap:3px;
-    background: var(--panel-white);
-    border:1px solid var(--border-line);
-    border-radius:5px;
-    padding:1px 5px;
-    box-shadow: var(--shadow-btn);
-  }
-  .roller-mini-label {
-    font-family:'Satoshi', sans-serif;
-    font-size:8px;
-    font-weight:700;
-    letter-spacing:.06em;
-    color:var(--ink-sub);
-    text-transform:uppercase;
-  }
-  .roller-mini-select {
-    background:transparent;
-    border:none;
-    color:var(--ink-main);
-    font-family:'JetBrains Mono', monospace;
-    font-size:9.5px;
-    font-weight:700;
-    padding:1px 0;
-    max-width:52px;
-    cursor:pointer;
-  }
-
   /* Single Bottom Action Bar */
   .action-bar {
     display:flex;
@@ -1031,6 +994,78 @@
     text-decoration:underline;
     padding:4px;
     font-weight:500;
+  }
+
+  /* RESPONSIVE CSS OVERRIDES FOR MOBILE SCREEN SIZES */
+  @media (max-width: 600px) {
+    .top-bar {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 8px;
+      text-align: center;
+    }
+    .app-brand {
+      font-size: 10px;
+      text-align: center;
+    }
+    .top-btn-group {
+      justify-content: center;
+      width: 100%;
+    }
+    .theme-toggle-btn, .cam-toggle-btn, .upload-btn-top {
+      flex: 1;
+      text-align: center;
+      padding: 6px 8px;
+      font-size: 10px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    body {
+      padding: 10px 6px 20px;
+    }
+    .device {
+      padding: 14px 10px 16px;
+      border-radius: 16px;
+    }
+    .device-grid {
+      gap: 12px;
+    }
+    .control-panel {
+      padding: 10px;
+      gap: 10px;
+    }
+    .ruler-face {
+      padding: 10px;
+    }
+    .zone-num-btn {
+      font-size: 9px;
+      padding: 4px 0;
+    }
+    .rollers-wrap {
+      gap: 6px;
+    }
+    .roller-column {
+      gap: 6px;
+    }
+    .roller-wheel-body {
+      height: 160px;
+      padding: 8px 3px;
+    }
+    .roller-item {
+      font-size: 11px;
+      padding: 4px 0;
+    }
+    .roller-title-primary {
+      font-size: 9.5px;
+    }
+    .roller-title-sub {
+      font-size: 8.5px;
+    }
+    .roller-zone-badge {
+      font-size: 8.5px;
+      padding: 1px 5px;
+    }
   }
 </style>
 </head>
@@ -1239,21 +1274,6 @@
 
 <script>
 (function(){
-  // HARD-DISABLE PINCH/DOUBLE-TAP ZOOM (iOS Safari ignores the viewport
-  // "user-scalable=no" hint for gestures, so it must be blocked in JS too)
-  document.addEventListener('gesturestart', (e) => e.preventDefault());
-  document.addEventListener('gesturechange', (e) => e.preventDefault());
-  document.addEventListener('gestureend', (e) => e.preventDefault());
-  document.addEventListener('touchmove', (e) => {
-    if(e.touches.length > 1) e.preventDefault();
-  }, { passive:false });
-  let lastTouchEnd = 0;
-  document.addEventListener('touchend', (e) => {
-    const now = Date.now();
-    if(now - lastTouchEnd <= 300) e.preventDefault();
-    lastTouchEnd = now;
-  }, { passive:false });
-
   // FULL DETAILED 1/3-STOP SHUTTER SPEED INCREMENTS
   const SHUTTERS = [
     {label:"1/8000", v:1/8000, full:true},  {label:"1/6400", v:1/6400, full:false}, {label:"1/5000", v:1/5000, full:false},
@@ -1279,23 +1299,10 @@
 
   const FULL_FSTOPS = [1.0, 1.4, 2.0, 2.8, 4.0, 5.6, 8.0, 11.0, 16.0, 22.0, 32.0];
 
-  // Per-point ISO / Aperture option lists — same values as the main ISO/Aperture
-  // selectors, reused so every metering point can carry its own exposure setting
-  // instead of sharing one global ISO/f-stop across all points.
-  const ISO_VALUES = [6,8,10,12,16,20,25,32,40,50,64,80,100,125,160,200,250,320,400,500,640,800,1000,1250,1600,2000,2500,3200,4000,5000,6400,8000,10000,12800,25600,51200,102400];
-  const FSTOP_VALUES = [1.0,1.1,1.2,1.4,1.6,1.8,2.0,2.2,2.5,2.8,3.2,3.5,4.0,4.5,5.0,5.6,6.3,7.1,8.0,9.0,10.0,11.0,13.0,14.0,16.0,18.0,20.0,22.0,25.0,29.0,32.0];
-
-  function buildIsoOptions(selected) {
-    return ISO_VALUES.map(v => `<option value="${v}" ${Math.abs(v - selected) < 0.01 ? 'selected' : ''}>${v}</option>`).join('');
-  }
-  function buildFstopOptions(selected) {
-    return FSTOP_VALUES.map(v => `<option value="${v}" ${Math.abs(v - selected) < 0.01 ? 'selected' : ''}>${v.toFixed(1)}</option>`).join('');
-  }
-
   const DEFAULT_SLOTS = [
-    { id: 1, mainTitle: "POINT 1", subTitle: "(SHADOW)", shutter: 1/4, anchorZone: 3, iso: 400, fstop: 8.0 },
-    { id: 2, mainTitle: "POINT 2", subTitle: "(MIDTONE)", shutter: 1/30, anchorZone: null, iso: 400, fstop: 8.0 },
-    { id: 3, mainTitle: "POINT 3", subTitle: "(HIGHLIGHT)", shutter: 1/125, anchorZone: null, iso: 400, fstop: 8.0 }
+    { id: 1, mainTitle: "POINT 1", subTitle: "(SHADOW)", shutter: 1/4, anchorZone: 3 },
+    { id: 2, mainTitle: "POINT 2", subTitle: "(MIDTONE)", shutter: 1/30, anchorZone: null },
+    { id: 3, mainTitle: "POINT 3", subTitle: "(HIGHLIGHT)", shutter: 1/125, anchorZone: null }
   ];
 
   let slots = DEFAULT_SLOTS.map(s => ({...s}));
@@ -1393,7 +1400,7 @@
 
         snapshotCanvas.width = img.width;
         snapshotCanvas.height = img.height;
-        const sCtx = snapshotCanvas.getContext('2d', { willReadFrequently: true });
+        const sCtx = snapshotCanvas.getContext('2d');
         sCtx.drawImage(img, 0, 0);
         snapshotCanvas.style.display = 'block';
 
@@ -1409,17 +1416,12 @@
     reader.readAsDataURL(file);
   });
 
-  // Main ISO/Aperture selectors act as a quick editor for whichever point is
-  // currently the anchor, and stay mirrored into the camera overlay selectors.
+  // Sync main ISO and Aperture selectors with camera overlay selectors
   document.getElementById('iso').addEventListener('change', (e) => {
     camIsoSelect.value = e.target.value;
-    const anchorSlot = slots[anchorSlotIndex];
-    if(anchorSlot) anchorSlot.iso = parseFloat(e.target.value) || anchorSlot.iso;
   });
   document.getElementById('fstop').addEventListener('change', (e) => {
     camFstopSelect.value = e.target.value;
-    const anchorSlot = slots[anchorSlotIndex];
-    if(anchorSlot) anchorSlot.fstop = parseFloat(e.target.value) || anchorSlot.fstop;
   });
   camIsoSelect.addEventListener('change', (e) => {
     document.getElementById('iso').value = e.target.value;
@@ -1448,11 +1450,11 @@
     if(!sourceCanvas || !sourceCanvas.width) {
       meterCanvas.width = 160;
       meterCanvas.height = 160;
-      sCtx = meterCanvas.getContext('2d', { willReadFrequently: true });
+      sCtx = meterCanvas.getContext('2d');
       sCtx.drawImage(webcamFeed, 0, 0, 160, 160);
       sourceCanvas = meterCanvas;
     } else {
-      sCtx = sourceCanvas.getContext('2d', { willReadFrequently: true });
+      sCtx = sourceCanvas.getContext('2d');
     }
 
     // 2. Sample 400 points across image frame
@@ -1486,11 +1488,10 @@
       return nearestShutterLabel(seconds).v;
     }
 
-    // 4. Directly SYNC into all 3 Zone System slots! (record the ISO/f-stop the
-    // reading was taken at too, since each point can now carry its own setting)
-    if(slots.length >= 1) { slots[0].shutter = lumToShutter(shadowLum); slots[0].iso = isoVal; slots[0].fstop = fstopVal; }
-    if(slots.length >= 2) { slots[1].shutter = lumToShutter(midtoneLum); slots[1].iso = isoVal; slots[1].fstop = fstopVal; }
-    if(slots.length >= 3) { slots[2].shutter = lumToShutter(highlightLum); slots[2].iso = isoVal; slots[2].fstop = fstopVal; }
+    // 4. Directly SYNC into all 3 Zone System slots!
+    if(slots.length >= 1) slots[0].shutter = lumToShutter(shadowLum);
+    if(slots.length >= 2) slots[1].shutter = lumToShutter(midtoneLum);
+    if(slots.length >= 3) slots[2].shutter = lumToShutter(highlightLum);
 
     anchorSlotIndex = 0;
     compute();
@@ -1532,7 +1533,7 @@
     if(isFrozen) {
       snapshotCanvas.width = webcamFeed.videoWidth || 640;
       snapshotCanvas.height = webcamFeed.videoHeight || 480;
-      const sCtx = snapshotCanvas.getContext('2d', { willReadFrequently: true });
+      const sCtx = snapshotCanvas.getContext('2d');
       sCtx.drawImage(webcamFeed, 0, 0, snapshotCanvas.width, snapshotCanvas.height);
       snapshotCanvas.style.display = 'block';
       captureBtn.textContent = 'RESUME';
@@ -1562,81 +1563,26 @@
     }
   });
 
-  function showCamToast(msg, duration) {
-    camHudToast.textContent = msg;
-    camHudToast.style.display = 'block';
-    setTimeout(() => { camHudToast.style.display = 'none'; }, duration || 2200);
-  }
-
-  // Best-effort lock to continuous AF/AE/AWB so the metered brightness doesn't
-  // hunt/flicker mid-reading on phones that expose these MediaTrack constraints.
-  async function applyStableTrackConstraints(track) {
-    if(!track || !track.getCapabilities) return;
-    try {
-      const caps = track.getCapabilities();
-      const advanced = [];
-      if(caps.focusMode && caps.focusMode.includes('continuous')) advanced.push({ focusMode: 'continuous' });
-      if(caps.exposureMode && caps.exposureMode.includes('continuous')) advanced.push({ exposureMode: 'continuous' });
-      if(caps.whiteBalanceMode && caps.whiteBalanceMode.includes('continuous')) advanced.push({ whiteBalanceMode: 'continuous' });
-      if(advanced.length) await track.applyConstraints({ advanced });
-    } catch(e) { /* not fatal — some browsers reject unsupported advanced constraints */ }
-  }
-
-  async function requestCameraStream() {
-    // Cap the requested resolution: metering only ever samples a downscaled
-    // 120px frame, so asking for the phone's full sensor res (often 4K+) just
-    // adds decode/scale latency on every draw — this is the main source of
-    // the "laggy" feel on mobile browsers.
-    const constraintAttempts = [
-      { video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } } },
-      { video: { facingMode: { ideal: 'environment' } } },
-      { video: true }
-    ];
-    let lastErr = null;
-    for(const constraints of constraintAttempts) {
-      try {
-        return await navigator.mediaDevices.getUserMedia(constraints);
-      } catch(err) {
-        lastErr = err;
-        if(err.name === 'NotAllowedError' || err.name === 'NotFoundError') break;
-      }
-    }
-    throw lastErr;
-  }
-
-  async function openCameraStream() {
-    try {
-      mediaStream = await requestCameraStream();
-      webcamFeed.srcObject = mediaStream;
-
-      // Some mobile browsers need an explicit play() after assigning
-      // srcObject dynamically — the autoplay attribute alone can silently
-      // stall the feed on a black frame.
-      try { await webcamFeed.play(); } catch(e) { /* ignored — playsinline+muted covers autoplay policy */ }
-
-      await applyStableTrackConstraints(mediaStream.getVideoTracks()[0]);
-
-      cameraViewPanel.classList.add('open');
-      camToggleBtn.classList.add('active');
-      setCamViewMode('matrix');
-      populateTargetPointSelect();
-
-      const beginMetering = () => startCameraSpotMetering();
-      if(webcamFeed.readyState >= 2) beginMetering();
-      else webcamFeed.addEventListener('loadeddata', beginMetering, { once: true });
-    } catch(err) {
-      let msg = 'CAMERA ACCESS UNAVAILABLE';
-      if(err && err.name === 'NotAllowedError') msg = 'CAMERA PERMISSION DENIED — CHECK BROWSER SETTINGS';
-      else if(err && err.name === 'NotFoundError') msg = 'NO CAMERA FOUND ON THIS DEVICE';
-      else if(err && err.name === 'NotReadableError') msg = 'CAMERA IN USE BY ANOTHER APP';
-      showCamToast(msg, 3000);
-    }
-  }
-
-  camToggleBtn.addEventListener('click', () => {
+  camToggleBtn.addEventListener('click', async () => {
     const isOpen = cameraViewPanel.classList.contains('open');
-    if(!isOpen) openCameraStream();
-    else stopCameraStream();
+    if(!isOpen) {
+      try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        webcamFeed.srcObject = mediaStream;
+        cameraViewPanel.classList.add('open');
+        camToggleBtn.classList.add('active');
+        setCamViewMode('matrix');
+        populateTargetPointSelect();
+        startCameraSpotMetering();
+      } catch(err) {
+        // Subtle in-app toast if camera is blocked
+        camHudToast.textContent = 'CAMERA ACCESS UNAVAILABLE';
+        camHudToast.style.display = 'block';
+        setTimeout(() => { camHudToast.style.display = 'none'; }, 2000);
+      }
+    } else {
+      stopCameraStream();
+    }
   });
 
   function stopCameraStream() {
@@ -1645,29 +1591,10 @@
       mediaStream = null;
     }
     if(meterInterval) clearInterval(meterInterval);
-    meterInterval = null;
     cameraViewPanel.classList.remove('open');
     camToggleBtn.classList.remove('active');
     if(isFrozen || isLoadedImageMode) toggleFreeze();
   }
-
-  // Mobile browsers (esp. iOS Safari) frequently kill the camera track when
-  // the tab/app is backgrounded. Detect that on return and recover instead of
-  // leaving a frozen/black viewfinder that looks broken.
-  document.addEventListener('visibilitychange', () => {
-    if(document.hidden) {
-      if(meterInterval) { clearInterval(meterInterval); meterInterval = null; }
-      return;
-    }
-    const isOpen = cameraViewPanel.classList.contains('open');
-    if(!isOpen || isFrozen || isLoadedImageMode) return;
-    const track = mediaStream && mediaStream.getVideoTracks()[0];
-    if(!track || track.readyState === 'ended') {
-      openCameraStream();
-    } else if(!meterInterval) {
-      startCameraSpotMetering();
-    }
-  });
 
   function renderCameraMatrixFullGrid(ev100Val, isoVal, currFstop) {
     camMatrixFullGrid.innerHTML = FULL_FSTOPS.map(f => {
@@ -1693,7 +1620,7 @@
 
   function sampleImageSpotMetering() {
     if(!snapshotCanvas.width) return;
-    const sCtx = snapshotCanvas.getContext('2d', { willReadFrequently: true });
+    const sCtx = snapshotCanvas.getContext('2d');
     const sampleX = Math.round(spotPos.x * snapshotCanvas.width);
     const sampleY = Math.round(spotPos.y * snapshotCanvas.height);
 
@@ -1720,7 +1647,7 @@
   }
 
   function startCameraSpotMetering() {
-    const ctx = meterCanvas.getContext('2d', { willReadFrequently: true });
+    const ctx = meterCanvas.getContext('2d');
     meterInterval = setInterval(() => {
       if(!webcamFeed.videoWidth || isFrozen || isLoadedImageMode) return;
       meterCanvas.width = 120;
@@ -1755,10 +1682,6 @@
 
   function handleAssign(selectedIdx) {
     slots[selectedIdx].shutter = liveSpotShutterVal;
-    // Record the ISO/f-stop this reading was taken at, since each point can
-    // now carry its own exposure setting instead of one shared globally.
-    slots[selectedIdx].iso = parseFloat(camIsoSelect.value) || slots[selectedIdx].iso;
-    slots[selectedIdx].fstop = parseFloat(camFstopSelect.value) || slots[selectedIdx].fstop;
     anchorSlotIndex = selectedIdx;
     compute();
   }
@@ -1856,16 +1779,6 @@
           <div class="roller-footer" onclick="window.setAnchorSlot(${idx})">
             <div class="roller-title-primary">${slot.mainTitle}</div>
             <div class="roller-title-sub">${slot.subTitle}</div>
-            <div class="roller-quick-settings" onclick="event.stopPropagation()">
-              <label class="roller-mini-field">
-                <span class="roller-mini-label">ISO</span>
-                <select class="roller-mini-select" onchange="window.setSlotIso(${idx}, this.value)">${buildIsoOptions(slot.iso)}</select>
-              </label>
-              <label class="roller-mini-field">
-                <span class="roller-mini-label">f/</span>
-                <select class="roller-mini-select" onchange="window.setSlotFstop(${idx}, this.value)">${buildFstopOptions(slot.fstop)}</select>
-              </label>
-            </div>
             <div class="roller-zone-badge">Zone ${calculatedZ.toFixed(1)}</div>
           </div>
         </div>
@@ -1891,20 +1804,6 @@
     compute();
   };
 
-  // Let each metering point carry its own ISO/Aperture instead of one shared
-  // globally — e.g. readings taken at different camera settings still line up
-  // correctly on the zone strip.
-  window.setSlotIso = function(idx, val) {
-    if(!slots[idx]) return;
-    slots[idx].iso = parseFloat(val) || slots[idx].iso;
-    compute();
-  };
-  window.setSlotFstop = function(idx, val) {
-    if(!slots[idx]) return;
-    slots[idx].fstop = parseFloat(val) || slots[idx].fstop;
-    compute();
-  };
-
   window.selectRollerShutter = function(idx, val) {
     anchorSlotIndex = idx;
     slots[idx].shutter = parseFloat(val);
@@ -1918,9 +1817,7 @@
       mainTitle: `POINT ${count}`,
       subTitle: `(POINT ${count})`,
       shutter: 1/60,
-      anchorZone: null,
-      iso: parseFloat(document.getElementById('iso').value) || 400,
-      fstop: parseFloat(document.getElementById('fstop').value) || 8.0
+      anchorZone: null
     });
     populateTargetPointSelect();
     compute();
@@ -1941,21 +1838,7 @@
     const targetZ = anchorSlot.anchorZone !== null ? anchorSlot.anchorZone : 3;
     const refSeconds = anchorSlot.shutter * Math.pow(2, targetZ - 5);
 
-    // Keep the main ISO/Aperture selectors showing whichever point is anchored.
-    const isoSelectEl = document.getElementById('iso');
-    const fstopSelectEl = document.getElementById('fstop');
-    if(isoSelectEl && parseFloat(isoSelectEl.value) !== anchorSlot.iso) isoSelectEl.value = anchorSlot.iso;
-    if(fstopSelectEl && parseFloat(fstopSelectEl.value) !== anchorSlot.fstop) fstopSelectEl.value = anchorSlot.fstop.toFixed(1);
-
-    // Exposure value (in stops) for a point, folding in ITS OWN ISO/aperture —
-    // not just its shutter — so points metered at different camera settings
-    // still land on the correct relative zone. When every point shares the
-    // same ISO/f-stop this reduces to the old pure-shutter-ratio comparison.
-    function evOf(s) {
-      return Math.log2((s.fstop * s.fstop) / s.shutter) - Math.log2(s.iso / 100);
-    }
-    const anchorEV = evOf(anchorSlot);
-    const calculatedZones = slots.map(s => targetZ + (evOf(s) - anchorEV));
+    const calculatedZones = slots.map(s => 5 + Math.log2(refSeconds / s.shutter));
 
     renderRollers(calculatedZones);
     renderZoneNumbers();
@@ -2000,10 +1883,10 @@
 
     const nearestRef = nearestShutterLabel(refSeconds);
     rShutter.textContent = nearestRef.label;
-    // Reflect the ANCHOR point's own ISO/f-stop — it may now differ from the
-    // global selector if it was set per-point or read from the camera meter.
-    rFstopLcd.textContent = 'f/' + anchorSlot.fstop.toFixed(1);
-    rIsoLcd.textContent = 'ISO ' + anchorSlot.iso;
+    const fstopVal = parseFloat(document.getElementById('fstop').value) || 8;
+    const isoVal = document.getElementById('iso').value;
+    rFstopLcd.textContent = 'f/' + fstopVal;
+    rIsoLcd.textContent = 'ISO ' + isoVal;
 
     let devLabel;
     if(span > 6.3){ devLabel = 'N--'; }
