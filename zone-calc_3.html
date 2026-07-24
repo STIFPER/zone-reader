@@ -165,7 +165,11 @@
     border-radius:20px;
     overflow:hidden !important;
     position:relative;
-    height: 490px;
+    /* Fill nearly the full viewport height in portrait so the feed reads as
+       a real full-screen viewfinder instead of a small embedded box.
+       vh line first as a fallback for browsers without dvh support. */
+    height: min(78vh, 820px);
+    height: min(78dvh, 820px);
     border: 1px solid rgba(255,255,255,0.25);
     box-shadow: inset 0 0 24px rgba(0,0,0,0.9), 0 10px 24px rgba(0,0,0,0.4);
     margin-bottom:14px;
@@ -179,7 +183,9 @@
   #webcamFeed {
     width:100%;
     height:100%;
-    object-fit:cover;
+    /* contain (not cover): show the whole portrait frame uncropped, letting
+       black bars appear on the sides instead of cropping the top/bottom */
+    object-fit:contain;
     border-radius:19px;
   }
   #snapshotCanvas {
@@ -187,7 +193,7 @@
     inset:0;
     width:100%;
     height:100%;
-    object-fit:cover;
+    object-fit:contain;
     display:none;
     z-index:1;
     border-radius:19px;
@@ -1331,11 +1337,23 @@
   document.addEventListener('touchmove', (e) => {
     if(e.touches.length > 1) e.preventDefault();
   }, { passive:false });
+  // Only swallow a REAL double-tap-to-zoom (two taps close in both time AND
+  // position) — a blind time-only check also ate fast single taps at
+  // different spots, which made picking the camera's spot-meter reticle feel
+  // unresponsive since each repositioning tap could get cancelled.
   let lastTouchEnd = 0;
+  let lastTouchX = 0;
+  let lastTouchY = 0;
   document.addEventListener('touchend', (e) => {
     const now = Date.now();
-    if(now - lastTouchEnd <= 300) e.preventDefault();
+    const touch = e.changedTouches && e.changedTouches[0];
+    const x = touch ? touch.clientX : 0;
+    const y = touch ? touch.clientY : 0;
+    const isSameSpot = Math.abs(x - lastTouchX) < 30 && Math.abs(y - lastTouchY) < 30;
+    if(now - lastTouchEnd <= 300 && isSameSpot) e.preventDefault();
     lastTouchEnd = now;
+    lastTouchX = x;
+    lastTouchY = y;
   }, { passive:false });
 
   // FULL DETAILED 1/3-STOP SHUTTER SPEED INCREMENTS
@@ -1475,6 +1493,7 @@
         captureBtn.textContent = 'RESUME LIVE';
         captureBtn.classList.add('frozen');
 
+        updateReticleVisualPosition();
         sampleImageSpotMetering();
       };
       img.src = event.target.result;
@@ -1619,18 +1638,57 @@
     }
   }
 
+  // object-fit:contain can letterbox the feed (black bars) when its aspect
+  // ratio doesn't match the container, so a raw click-fraction-of-container
+  // no longer lines up with the actual visible video pixels. Compute the
+  // real rendered content box within the container and map taps against
+  // THAT instead, clamping bar taps to the nearest visible edge.
+  function getVisibleContentRect(containerW, containerH, mediaW, mediaH) {
+    if(!mediaW || !mediaH) return { x:0, y:0, w:containerW, h:containerH };
+    const containerAspect = containerW / containerH;
+    const mediaAspect = mediaW / mediaH;
+    let w, h;
+    if(mediaAspect > containerAspect) {
+      w = containerW;
+      h = containerW / mediaAspect;
+    } else {
+      h = containerH;
+      w = containerH * mediaAspect;
+    }
+    return { x: (containerW - w) / 2, y: (containerH - h) / 2, w, h };
+  }
+
+  // spotPos is a fraction of the actual media content box (see above), but
+  // the reticle <div> is positioned with left/top % of the whole CONTAINER —
+  // convert back so the reticle lines up with where the sample is really
+  // taken from instead of drifting into the letterbox bars.
+  function updateReticleVisualPosition() {
+    const rect = cameraViewPanel.getBoundingClientRect();
+    if(!rect.width || !rect.height) return;
+    const mediaW = (isLoadedImageMode || isFrozen) ? snapshotCanvas.width : webcamFeed.videoWidth;
+    const mediaH = (isLoadedImageMode || isFrozen) ? snapshotCanvas.height : webcamFeed.videoHeight;
+    const content = getVisibleContentRect(rect.width, rect.height, mediaW, mediaH);
+    const leftPx = content.x + spotPos.x * content.w;
+    const topPx = content.y + spotPos.y * content.h;
+    spotReticle.style.left = (leftPx / rect.width * 100) + '%';
+    spotReticle.style.top = (topPx / rect.height * 100) + '%';
+  }
+
   // Tap Anywhere on Camera Stream or Uploaded Image to Move Spot Reticle
   cameraViewPanel.addEventListener('click', (e) => {
     if(e.target.closest('#viewModeMeterBar') || e.target.closest('#viewModeMatrixPanel') || e.target.closest('.cam-top-hud')) return;
     const rect = cameraViewPanel.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
     const clickY = e.clientY - rect.top;
-    
-    spotPos.x = Math.max(0.08, Math.min(0.92, clickX / rect.width));
-    spotPos.y = Math.max(0.08, Math.min(0.65, clickY / rect.height));
 
-    spotReticle.style.left = (spotPos.x * 100) + '%';
-    spotReticle.style.top = (spotPos.y * 100) + '%';
+    const mediaW = (isLoadedImageMode || isFrozen) ? snapshotCanvas.width : webcamFeed.videoWidth;
+    const mediaH = (isLoadedImageMode || isFrozen) ? snapshotCanvas.height : webcamFeed.videoHeight;
+    const content = getVisibleContentRect(rect.width, rect.height, mediaW, mediaH);
+
+    spotPos.x = Math.max(0.08, Math.min(0.92, (clickX - content.x) / content.w));
+    spotPos.y = Math.max(0.08, Math.min(0.65, (clickY - content.y) / content.h));
+
+    updateReticleVisualPosition();
 
     if(isLoadedImageMode || isFrozen) {
       sampleImageSpotMetering();
@@ -1696,7 +1754,7 @@
       setCamViewMode('matrix');
       populateTargetPointSelect();
 
-      const beginMetering = () => startCameraSpotMetering();
+      const beginMetering = () => { updateReticleVisualPosition(); startCameraSpotMetering(); };
       if(webcamFeed.readyState >= 2) beginMetering();
       else webcamFeed.addEventListener('loadeddata', beginMetering, { once: true });
     } catch(err) {
